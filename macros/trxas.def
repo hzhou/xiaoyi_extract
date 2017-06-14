@@ -1,0 +1,44 @@
+subcode: read_trxas(f)
+    my ($c_jump, $o_jump);
+    my %cols;
+    my @rows
+    &call open_r, $(f)
+        $if /^#L\s+(.*)/
+            my @t=split /\s+/, $1;
+            $call read_header
+            $call check_header
+            $o_jump=$b_max+1
+        $elif /^(\d.*)/ and $c_jump
+            my @t=split /\s+/, $1;
+            push @rows, \@t
+
+    subcode: read_header
+        $global $c_max, $o_max, $b_max
+        $global $c_min, $o_min, $b_min
+        ($c_min, $o_min, $b_min)=(999, 999, 999);
+
+        my $i=0;
+        $foreach $col in @t
+            $call update_col_cob
+            $cols{$col} = $i    
+            $i++
+        $c_jump = $cols{c1o0b0} - $cols{c0o0b0}
+
+        subcode: update_col_cob
+            $if $col=~/c(\d+)o(\d+)b(\d+)/
+                $(for:c,o,b and 1,2,3)
+                    if($$1_max<$$2){$$1_max=$$2};
+                    if($$1_min>$$2){$$1_min=$$2};
+
+    subcode: check_header
+        print " channel [$c_min, $c_max], orbit [$o_min, $o_max], bunch [$b_min, $b_max]\n";
+        $(for:c,o,b)
+            $call assert, $$1_min==0
+        $call assert, $c_max>=2
+        $call assert, $cols{c0o0b0}
+        $call assert, $cols{c1o0b0}
+
+        subcode: assert(cond)
+            $if !($(cond))
+                die "assert error: ! [$(cond)]\n"
+

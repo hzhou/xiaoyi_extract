@@ -1,0 +1,110 @@
+include: macros/trxas.def
+
+macros:
+    Extra_Column: Time, Energy, SYNC, c0o0b0
+
+page: trxas_extract
+    run: perl out/trxas_extract.pl data/setup3-00047
+
+    my ($file, $trig)=@ARGV
+    $if !-f $file
+        die "usage: $0 file trig\n"
+
+    my $pre_n_avg=11;
+    my $aft_n_avg=1;
+    my $n_pnt=4;
+
+    my $new_file
+    $if $file=~/^(.*)\/saveddata\/\d+\/\d+\/\d+\/\w+-(\d+)/
+        my $folder="$1/extract_$aft_n_avg";
+        mkdir $folder if !-d $folder;
+        print $folder;
+        $new_file="$folder/extract-$2";
+    $elif $file=~/.*\/(.+)/
+        $new_file="extract-$1"
+    $else
+        $new_file="extract-$file"
+
+    $call read_trxas, $file
+    my @out;
+    $call out_header
+    $call process_rows
+
+    my $n=scalar(@out);
+    print "\t$c_max channels, $o_max orbits, $b_max bunches, $n data rows\n";
+    print "\t-> $new_file ...\n";
+    &call open_w, $new_file
+        $foreach $l in @out
+            print Out $l, "\n";
+
+#---------------------------------------- 
+subcode: out_header
+    $global @extra_cols
+    my $line
+    $(for:$(Extra_Column))
+        $if defined $cols{$1}
+            push @extra_cols, $cols{$1}
+            $line .= "$1 "
+    $print "extra columns: @extra_cols"
+
+    $for $i=0:$n_pnt
+        $line.= "b$i b$i-diff ";
+    push @out, $line;
+
+#---------------------------------------- 
+subcode: process_rows
+    $foreach $row in @rows
+        $call init_out_line
+        my $i0=$cols{c0O0b0};
+
+        $call calc_background
+        $call out_line_b_diff
+        
+        push @out, $line;
+
+    # --------------------
+    subcode: init_out_line
+        my $line
+        $foreach $c in @extra_cols
+            $line .= $row->[$c].' ' 
+
+    # ---------------------- 
+    subcode: calc_background
+        my (@back0, @back1, @back2, @back12);
+        $for $i=0:$o_jump
+            my ($t0, $t1, $t2, $t12)
+            $for $j=1:$pre_n_avg+1
+                my $i0 = $cols{c0o0b0} + $trig + $i - $o_jump*$j
+                $t0+=$row->[$i0];
+                $t1+=$row->[$i0+$c_jump];
+                $t2+=$row->[$i0+$c_jump*2];
+            $(for:0,1,2)
+                $t$1 /= $pre_n_avg
+            $t1/=$t0;
+            $t2/=$t0;
+            $t12=($t1+$t2)/2;
+            $(for:0,1,2,12)
+                push @back$1, $t$1
+        
+    subcode: out_line_b_diff
+        $for $j=0:$n_pnt
+            my ($a12,$adiff)
+            my $i0 = $cols{c0o0b0} + $trig + $j*$aft_n_avg
+            $for $i=0:$aft_n_avg
+                my ($t0, $t1, $t2, $t12);
+                $t0=$row->[$i0+$i];
+                $t1=$row->[$i0+$i+$c_jump];
+                $t2=$row->[$i0+$i+$c_jump*2];
+                $t1/=$t0;
+                $t2/=$t0;
+                $t12=($t1+$t2)/2;
+
+                my $b_idx=($i+$j*$aft_n_avg) % $o_jump;
+                my $diff=-$back12[$b_idx]+$t12;
+
+                $a12+=$t12;
+                $adiff+=$diff;
+
+            $a12/=$aft_n_avg;
+            $adiff/=$aft_n_avg;
+            $line.="$a12 $adiff ";

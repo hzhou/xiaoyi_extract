@@ -1,0 +1,139 @@
+include: macros/trxas.def
+
+page: trxas_stat
+    run: perl out/trxas_stat.pl data/setup-00030
+
+    my ($file)=@ARGV
+
+    $call read_trxas, $file
+
+    $call gather_data_by_columns
+    $call make_cb_list
+    &call stat_out, stat.txt
+        my $header="orbit "
+        $foreach $k in @cb_list
+            $header .= "$k-avg "
+            $header .= "$k-dev "
+        print Out "$header\n"
+
+        $for $i=$o_min:$o_max+1
+            my @tlist=($i)
+            $foreach $k in @cb_list
+                $if $k=~/c(\d+)b(\d+)/
+                    my $name = "c$1"."o$i"."b$2"
+                    my $idx = $cols{$name}
+                    # $print "check data $name ..."
+                    # check_data($data[$idx])
+                    my ($mean, $dev) = get_mean_dev($data[$idx])
+                    push @tlist, $mean
+                    push @tlist, $dev
+            print Out join(" ", @tlist), "\n"
+
+page: trxas_stat_ratio
+    my ($file)=@ARGV
+
+    $call read_trxas, $file
+
+    $call gather_data_by_columns
+    $call make_cb_list
+    &call stat_out, stat_ratio.txt
+        my $header="orbit "
+        $foreach $k in @cb_list
+            $header .= "$k-dev/avg "
+        print Out "$header\n"
+
+        $for $i=$o_min:$o_max+1
+            my @tlist=($i)
+            $foreach $k in @cb_list
+                $if $k=~/c(\d+)b(\d+)/
+                    my $name = "c$1"."o$i"."b$2"
+                    my $idx = $cols{$name}
+                    # $print "check data $name ..."
+                    # check_data($data[$idx])
+                    my ($mean, $dev) = get_mean_dev($data[$idx])
+                    push @tlist, $dev/$mean
+            print Out join(" ", @tlist), "\n"
+
+page: trxas_stat_norm
+    my ($file)=@ARGV
+
+    $call read_trxas, $file
+    $call gather_data_by_columns
+
+    &call stat_out, stat_norm.txt
+        my $header="orbit "
+        &call each_cb
+            $header .= "$k-avg "
+            $header .= "$k-dev "
+        print Out "$header\n"
+
+        $for $i=$o_min:$o_max+1
+            my @tlist=($i)
+            &call each_cb_0
+                my ($mean, $dev) = get_mean_dev($d)
+                push @tlist, $mean
+                push @tlist, $dev
+            print Out join(" ", @tlist), "\n"
+
+    subcode: each_cb
+        $for $b=$b_min:$b_max+1
+            $foreach $c in 1,2
+                my $k="c$c"."b$b"
+                BLOCK
+    subcode: each_cb_0
+        $for $b=$b_min:$b_max+1
+            my $c0 = "c0"."o$i"."b$b"
+            my $d0 = $data[$cols{$c0}]
+            $foreach $c in 1,2
+                my $name = "c$c"."o$i"."b$b"
+                my $d = $data[$cols{$name}]
+                my $n = @$d
+                $for $i=0:$n
+                    $d->[$i] /= $d0->[$i]
+                BLOCK
+
+#---------------------------------------- 
+subcode: stat_out(name)
+    &call open_w, $(name)
+        BLOCK
+    $print --> $(name)
+#---------------------------------------- 
+subcode: make_cb_list
+    my @cb_list
+    $for $c=$c_min:$c_max+1
+        $for $b=$b_min:$b_max+1
+            push @cb_list, "c$c"."b$b"
+
+subcode: gather_data_by_columns
+    my @data
+    my $n = @{$rows[0]}
+    $for $i=0:$n
+        push @data, []
+    $foreach $row in @rows
+        $for $i=0:$n
+            push @{$data[$i]}, $row->[$i]
+
+fncode: get_mean_dev($data)
+    my $n=@$data
+    my ($sum1, $sum2)
+    $foreach $d in @$data
+        $sum1+=$d
+        $sum2+=$d*$d
+    my $mean = $sum1/$n
+    my $dev  = sqrt($sum2/$n - $mean*$mean)
+    return ($mean, $dev)
+
+fncode: check_data($data)
+    my $n=@$data
+    my $max_diff
+    $for $i=0:$n-1
+        my $diff = $data->[$i+1]-$data->[$i]
+        $if !$max_diff
+            $max_diff = $diff
+        $elif abs($diff/$max_diff)>10
+            $print "  $i: $diff ($max_diff)"
+        $else
+            $if abs($max_diff)<abs($diff)
+                $max_diff = $diff
+        
+
