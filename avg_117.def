@@ -1,0 +1,67 @@
+page: avg_117
+    module: perl
+    # stat: 1
+
+    my $file = "FeCN6_752kHz-00025"
+
+    my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger)
+
+    my @out
+    &call open_r, $file
+        $if /^#L\s+N\s+Epoch\s+Energy/
+            my @tlist = split /\s+/, $_
+            $for $i, $a in @tlist
+                $if $a eq "Energy"
+                    $i_energy = $i
+                $elif $a eq "c0o0b0"
+                    $i_c0 = $i
+                $elif $a eq "c1o0b0"
+                    $i_c1 = $i
+                $elif $a eq "c2o0b0"
+                    $i_c2 = $i
+                $elif $a eq "c0o1b0"
+                    $n_trigger = $i - $i_c0
+            $n_repeat = int(($i_c1 - $i_c0) / $n_trigger)
+            $print $i_energy, $i_c0, $n_trigger, $n_repeat
+        $elif /^\d+/ and $i_energy
+            my @tlist = split /\s+/
+            my $energy = $tlist[$i_energy]
+            $print "  energy = $energy..."
+            my (@data, @data2)
+            $for $j=0:$n_trigger
+                my ($sum1, $sum2)
+                $for $i=0:$n_repeat
+                    my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j]
+                    my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j]
+                    my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j]
+                    my $c = ($c1 + $c2) / $c0
+                    $sum1 += $c
+                    $sum2 += $c * $c
+                $sum1 /= $n_repeat
+                $sum2 /= $n_repeat
+                $sum2 = sqrt($sum2 - ($sum1 * $sum1))
+                $data[$j] = $sum1
+                $data2[$j] = $sum2
+            $(if:stat)
+                push @out, [$energy, @data, @data2]
+            $(else)
+                push @out, [$energy, @data]
+
+    &call open_W, out.txt
+        my @header = ("Energy")
+        $for $i = 0:$n_trigger
+            push @header, "avg-$i"
+        $(if:stat)
+            $for $i = 0:$n_trigger
+                push @header, "std-$i"
+        print Out join(' ', @header)."\n"
+
+        $foreach $d in @out
+            print Out join(' ', @$d)."\n"
+
+
+
+
+
+            
+
