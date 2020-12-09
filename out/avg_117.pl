@@ -1,7 +1,10 @@
 #!/usr/bin/perl
 use strict;
 
-my $file = "FeCN6_752kHz-00025";
+my $file = $ARGV[0];
+if (!-e $file) {
+    die "Usage: $0 [input_data_file]";
+}
 
 my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger);
 
