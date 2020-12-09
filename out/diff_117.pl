@@ -35,7 +35,10 @@ sub get_header {
     my ($n_output) = @_;
     my @tlist = "Energy";
     for (my $i = 0; $i<$n_output; $i++) {
-        push @tlist, " out-$i";
+        push @tlist, " avg-$i";
+    }
+    for (my $i = 0; $i<$n_output; $i++) {
+        push @tlist, " diff-$i";
     }
     return  \@tlist;
 }
@@ -53,13 +56,7 @@ sub get_diff {
         }
     }
 
-    my $n = @$l;
-    for (my $i = 27; $i<$n; $i++) {
-        my $j = ($i) % 9;
-        $l->[$i] -= $ground[$j];
-    }
-
-    my @l_out;
+    my @l_avg;
     my $i = 27;
     for (my $i_out = 0; $i_out<$n_output; $i_out++) {
         my $sum;
@@ -67,8 +64,25 @@ sub get_diff {
             $sum += $l->[$i];
             $i++;
         }
-        push @l_out, $sum/$n_cluster;
+        push @l_avg, $sum/$n_cluster;
     }
-    return [$l->[0], @l_out];
+
+    my $n = @$l;
+    for (my $i = 27; $i<$n; $i++) {
+        my $j = ($i) % 9;
+        $l->[$i] -= $ground[$j];
+    }
+
+    my @l_diff;
+    my $i = 27;
+    for (my $i_out = 0; $i_out<$n_output; $i_out++) {
+        my $sum;
+        for (my $i_c = 0; $i_c<$n_cluster; $i_c++) {
+            $sum += $l->[$i];
+            $i++;
+        }
+        push @l_diff, $sum/$n_cluster;
+    }
+    return [$l->[0], @l_avg, @l_diff];
 }
 

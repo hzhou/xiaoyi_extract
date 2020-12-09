@@ -32,25 +32,37 @@ fncode: get_diff($l, $n_cluster, $n_output)
         $else
             $ground[$j] = ($l->[$i] + $l->[$i+9]) / 2
 
-    my $n = @$l
-    # calc diff
-    $for $i=27:$n
-        my $j = ($i) % 9
-        $l->[$i] -= $ground[$j]
-
     # cluster it
-    my @l_out
+    my @l_avg
     my $i = 27
     $for $i_out=0:$n_output
         my $sum
         $for $i_c=0:$n_cluster
             $sum += $l->[$i]
             $i++
-        push @l_out, $sum/$n_cluster
-    return [$l->[0], @l_out]
+        push @l_avg, $sum/$n_cluster
+
+    # calc diff
+    my $n = @$l
+    $for $i=27:$n
+        my $j = ($i) % 9
+        $l->[$i] -= $ground[$j]
+
+    # cluster it
+    my @l_diff
+    my $i = 27
+    $for $i_out=0:$n_output
+        my $sum
+        $for $i_c=0:$n_cluster
+            $sum += $l->[$i]
+            $i++
+        push @l_diff, $sum/$n_cluster
+    return [$l->[0], @l_avg, @l_diff]
 
 fncode: get_header($n_output)
     my @tlist = "Energy"
     $for $i=0:$n_output
-        push @tlist, " out-$i"
+        push @tlist, " avg-$i"
+    $for $i=0:$n_output
+        push @tlist, " diff-$i"
     return  \@tlist
