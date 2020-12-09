@@ -21,19 +21,19 @@ while(<In>){
         foreach my $a (@tlist) {
             $i++;
             if ($a eq "Energy") {
-                $i_energy = $i;
+                $i_energy = $i - 1;
             }
             elsif ($a eq "c0o0b0") {
-                $i_c0 = $i;
+                $i_c0 = $i - 1;
             }
             elsif ($a eq "c1o0b0") {
-                $i_c1 = $i;
+                $i_c1 = $i - 1;
             }
             elsif ($a eq "c2o0b0") {
-                $i_c2 = $i;
+                $i_c2 = $i - 1;
             }
             elsif ($a eq "c0o1b0") {
-                $n_trigger = $i - $i_c0;
+                $n_trigger = ($i - 1) - $i_c0;
             }
         }
         $n_repeat = int(($i_c1 - $i_c0) / $n_trigger);
