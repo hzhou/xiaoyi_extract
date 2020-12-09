@@ -7,6 +7,8 @@ if (!-f $file or !$n_cluster or !$n_output) {
 }
 
 my @data_out;
+push @data_out, get_diff($n_output);
+
 print "Loading $file ...\n";
 my $flag;
 open In, "$file" or die "Can't open $file: $!\n";

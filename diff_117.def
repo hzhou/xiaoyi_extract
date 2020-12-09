@@ -6,6 +6,8 @@ page: diff_117
         die "Usage: $0 $file n_cluster n_output\n"
 
     my @data_out
+    push @data_out, get_diff($n_output)
+
     $print Loading $file ...
     my $flag
     &call open_r, $file
