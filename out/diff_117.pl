@@ -7,7 +7,7 @@ if (!-f $file or !$n_cluster or !$n_output) {
 }
 
 my @data_out;
-push @data_out, get_diff($n_output);
+push @data_out, get_header($n_output);
 
 print "Loading $file ...\n";
 my $flag;
@@ -31,6 +31,15 @@ foreach my $l (@data_out) {
 close Out;
 
 # ---- subroutines --------------------------------------------
+sub get_header {
+    my ($n_output) = @_;
+    my @tlist = "Energy";
+    for (my $i = 0; $i<$n_output; $i++) {
+        push @tlist, " out-$i";
+    }
+    return  \@tlist;
+}
+
 sub get_diff {
     my ($l, $n_cluster, $n_output) = @_;
     my @ground;
