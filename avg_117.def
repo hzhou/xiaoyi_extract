@@ -7,6 +7,9 @@ page: avg_117
     $if !-e $file
         die "Usage: $0 [input_data_file]"
 
+    $if !-d "extract"
+        mkdir "extract" or die "Can't mkdir extract.\n"
+
     my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger)
 
     my @out
@@ -50,7 +53,7 @@ page: avg_117
             $(else)
                 push @out, [$energy, @data]
 
-    &call open_W, out.txt
+    &call open_W, extract/$file
         my @header = ("Energy")
         $for $i = 0:$n_trigger
             push @header, "avg-$i"

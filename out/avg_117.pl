@@ -6,6 +6,10 @@ if (!-e $file) {
     die "Usage: $0 [input_data_file]";
 }
 
+if (!-d "extract") {
+    mkdir "extract" or die "Can't mkdir extract.\n";
+}
+
 my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger);
 
 my @out;
@@ -61,8 +65,8 @@ while(<In>){
 }
 close In;
 
-open Out, ">out.txt" or die "Can't write out.txt: $!\n";
-print "  --> [out.txt]\n";
+open Out, ">extract/$file" or die "Can't write extract/$file: $!\n";
+print "  --> [extract/$file]\n";
 my @header = ("Energy");
 for (my $i = 0; $i<$n_trigger; $i++) {
     push @header, "avg-$i";
