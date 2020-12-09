@@ -53,7 +53,7 @@ page: avg_117
             $(else)
                 push @out, [$energy, @data]
 
-    &call open_W, extract/$file
+    &call open_W, extract/extract-$file
         my @header = ("Energy")
         $for $i = 0:$n_trigger
             push @header, "avg-$i"

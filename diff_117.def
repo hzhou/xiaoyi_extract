@@ -1,0 +1,67 @@
+page: diff_117
+    module: perl
+
+    my ($n_cluster, $n_output) = @ARGV
+    $if !$n_cluster or !$n_output
+        die "Usage: $0 [n_cluster] [n_output]\n"
+
+    my @files = glob("extract-*")
+    my ($n,$count, @data)
+    $foreach $f in @files
+        $print Loading $f ...
+        my ($idx, $added)
+        &call open_r, $f
+            $if /^Energy avg-0/
+                $idx = 0
+            $elif defined $idx
+                my @tlist = split /\s+/, $_
+                $if !$data[$idx]
+                    $n = @tlist
+                    $data[$idx] = \@tlist
+                $elif abs($data[$idx]->[0] - $tlist[0]) > 0.001
+                    $print ... Energy mismatch at line $idx
+                    last
+                $else
+                    $for $i=1:$n
+                        $data[$idx]->[$i] += $tlist[$i]
+                    $added++
+        $if $added
+            $count++
+
+    my @data_out
+    $foreach $l in @data
+        $for $i=1:$n
+            $l->[$i] /= $count
+        # 26 ground state into 3 group of 9
+        my @ground
+        $for $i=1:27
+            my $j = ($i) % 9 # use the fact that 27 is multiple of 9 and i=27 -> j=0
+            $if $i+18>=26
+                $ground[$j] = ($l->[$i] + $l->[$i+9] + $l->[$i+18]) / 3
+            $else
+                $ground[$j] = ($l->[$i] + $l->[$i+9]) / 2
+
+        # calc diff
+        $for $i=27:$n
+            my $j = ($i) % 9
+            $l->[$i] -= $ground[$j]
+
+        my @l_out
+        my $i = 27
+        $for $i_out=0:$n_output
+            my $sum
+            $for $i_c=0:$n_cluster
+                $sum += $l->[$i]
+                $i++
+            push @l_out, $sum/$n_cluster
+        push @data_out, [$l->[0], @l_out]
+
+    &call open_W, diff.txt
+        print Out "Energy"
+        $for $i=0:$n_output
+            print Out " out-$i"
+        print Out "\n"
+
+        $foreach $l in @data_out
+            print Out join(' ', @$l). "\n"
+

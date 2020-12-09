@@ -65,8 +65,8 @@ while(<In>){
 }
 close In;
 
-open Out, ">extract/$file" or die "Can't write extract/$file: $!\n";
-print "  --> [extract/$file]\n";
+open Out, ">extract/extract-$file" or die "Can't write extract/extract-$file: $!\n";
+print "  --> [extract/extract-$file]\n";
 my @header = ("Energy");
 for (my $i = 0; $i<$n_trigger; $i++) {
     push @header, "avg-$i";
