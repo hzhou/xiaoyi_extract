@@ -40,7 +40,7 @@ page: avg_117
                     my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j]
                     my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j]
                     my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j]
-                    my $c = ($c1 + $c2) / $c0
+                    my $c = ($c1 + $c2) / 2 /$c0
                     $sum1 += $c
                     $sum2 += $c * $c
                 $sum1 /= $n_repeat
