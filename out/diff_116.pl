@@ -58,8 +58,8 @@ sub get_diff {
         $ground[$j] /= $counts[$j];
     }
     my (@data, @diff);
-    for (my $i = 0; $i<8; $i++) {
-        for (my $j = 0; $j<116; $j++) {
+    for (my $j = 0; $j<116; $j++) {
+        for (my $i = 0; $i<8; $i++) {
             my $idx = $trigger + $i * 116 + $j;
             push @data, $l->[$idx + 1];
             push @diff, $l->[$idx + 1] - $ground[$idx % 9];

@@ -45,8 +45,8 @@ fncode: get_diff($l, $n_cluster, $n_output)
                 
     subcode: interleave
         my (@data, @diff)
-        $for $i=0:8
-            $for $j=0:116
+        $for $j=0:116
+            $for $i=0:8
                 my $idx = $trigger + $i * 116 + $j
                 push @data, $l->[$idx + 1]
                 push @diff, $l->[$idx + 1] - $ground[$idx % 9]
