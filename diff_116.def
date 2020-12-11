@@ -1,0 +1,72 @@
+page: diff_116
+    module: perl
+
+    my ($file, $n_cluster, $n_output) = @ARGV
+    $if !-f $file or !$n_cluster or !$n_output
+        die "Usage: $0 $file n_cluster n_output\n"
+
+    my @data_out
+    push @data_out, get_header($n_output)
+
+    $print Loading $file ...
+    my $flag
+    &call open_r, $file
+        $if /^Energy avg-0/
+            $flag = 1
+        $elif $flag
+            my @tlist = split /\s+/, $_
+            push @data_out, get_diff(\@tlist, $n_cluster, $n_output)
+
+    &call open_W, diff-out.txt
+        $foreach $l in @data_out
+            print Out join(' ', @$l). "\n"
+
+fncode: get_diff($l, $n_cluster, $n_output)
+    $call get_ground
+    $call interleave
+    $call cluster, data
+    $call cluster, diff
+    return [$l->[0], @l_data, @l_diff]
+
+    subcode: get_ground
+        my @counts
+        my @ground
+        # 0-based
+        my $trigger=11
+        $for $i=0:8
+            # my $i_t = int($trigger + 115.875 * $i + 0.000001)
+            my $i_t = $trigger + 116 * $i 
+            $for $k=0:18
+                my $k2 = ($i_t - $k - 1 + 927) % 927
+                my $j = $k2 % 9
+                $ground[$j] += $l->[$k2 + 1]
+                $counts[$j] ++
+        $for $j=0:9
+            $ground[$j] /= $counts[$j]
+                
+    subcode: interleave
+        my (@data, @diff)
+        $for $i=0:8
+            $for $j=0:116
+                my $idx = $trigger + $i * 116 + $j
+                push @data, $l->[$idx + 1]
+                push @diff, $l->[$idx + 1] - $ground[$idx % 9]
+
+    subcode: cluster(data)
+        my @l_$(data)
+        my $i = 0
+        $for $i_out=0:$n_output
+            my $sum
+            $for $i_c=0:$n_cluster
+                $sum += $$(data)[$i]
+                $i++
+            push @l_$(data), $sum/$n_cluster
+
+
+fncode: get_header($n_output)
+    my @tlist = "Energy"
+    $for $i=0:$n_output
+        push @tlist, " avg-$i"
+    $for $i=0:$n_output
+        push @tlist, " diff-$i"
+    return  \@tlist

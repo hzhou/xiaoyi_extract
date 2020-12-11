@@ -1,0 +1,80 @@
+page: avg_116
+    module: perl
+    # arg: FeCN6_Async_2-00456
+    # stat: 1
+
+    # my $file = "FeCN6_752kHz-00025"
+    my $file = $ARGV[0]
+    $if !-e $file
+        die "Usage: $0 [input_data_file]"
+
+    $if !-d "extract"
+        mkdir "extract" or die "Can't mkdir extract.\n"
+
+    my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger)
+
+    my @out
+    &call open_r, $file
+        $if /^#L\s+N\s+Epoch\s+Energy/
+	    $call parse_header		    
+        $elif /^\d+/ and $i_energy
+	    $call process_data
+            $(if:stat)
+                push @out, [$energy, @data, @data2]
+            $(else)
+                push @out, [$energy, @data]
+
+    $if !-d "extract"
+        mkdir "extract"
+    &call open_W, extract/extract-$file
+        my @header = ("Energy")
+        $for $i = 0:$n_trigger
+            push @header, "avg-$i"
+        $(if:stat)
+            $for $i = 0:$n_trigger
+                push @header, "std-$i"
+        print Out join(' ', @header)."\n"
+
+        $foreach $d in @out
+            print Out join(' ', @$d)."\n"
+
+subcode: parse_header
+    my @tlist = split /\s+/, $_
+    $for $i, $a in @tlist
+	$if $a eq "Energy"
+	    $i_energy = $i - 1
+	$elif $a eq "c0o0b0"
+	    $i_c0 = $i - 1
+	$elif $a eq "c1o0b0"
+	    $i_c1 = $i - 1
+	$elif $a eq "c2o0b0"
+	    $i_c2 = $i - 1
+	$elif $a eq "c0o1b0"
+	    $n_trigger = ($i - 1) - $i_c0
+    $n_repeat = int(($i_c1 - $i_c0) / $n_trigger)
+    $print $i_energy, $i_c0, $n_trigger, $n_repeat
+
+subcode: process_data
+    my @tlist = split /\s+/
+    my $n = @tlist
+    my $energy = $tlist[$i_energy]
+    $print "  energy = $energy..."
+    my (@data, @data2, @counts)
+    $for $j=0:$n_trigger
+	my $cnt = $n_repeat
+	$if $i_c0 + $n_repeat * $n_trigger + $j < $i_c1
+	    $cnt++
+	my ($sum1, $sum2)
+	$for $i=0:$cnt
+	    my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j]
+	    my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j]
+	    my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j]
+	    my $c = ($c1 + $c2) / 2 /$c0
+	    $sum1 += $c
+	    $sum2 += $c * $c
+	$sum1 /= $cnt
+	$sum2 /= $cnt
+	$sum2 = sqrt($sum2 - ($sum1 * $sum1))
+	$data[$j] = $sum1
+	$data2[$j] = $sum2
+
