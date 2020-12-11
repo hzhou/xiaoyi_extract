@@ -11,60 +11,68 @@ if (!-d "extract") {
 }
 
 my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger);
+my ($i_Sa);
 
 my @out;
+my $i_data;
 open In, "$file" or die "Can't open $file: $!\n";
 while(<In>){
     if (/^#L\s+N\s+Epoch\s+Energy/) {
         my @tlist = split /\s+/, $_;
-        my $i = -1;
+        my $i=-1;
         foreach my $a (@tlist) {
-            $i++;
             if ($a eq "Energy") {
-                $i_energy = $i - 1;
+                $i_energy = $i;
             }
             elsif ($a eq "c0o0b0") {
-                $i_c0 = $i - 1;
+                $i_c0 = $i;
             }
             elsif ($a eq "c1o0b0") {
-                $i_c1 = $i - 1;
+                $i_c1 = $i;
             }
             elsif ($a eq "c2o0b0") {
-                $i_c2 = $i - 1;
+                $i_c2 = $i;
             }
             elsif ($a eq "c0o1b0") {
-                $n_trigger = ($i - 1) - $i_c0;
+                $n_trigger = $i - $i_c0;
             }
+            elsif ($a eq "Sa") {
+                $i_Sa = $i;
+            }
+            $i++;
         }
         $n_repeat = int(($i_c1 - $i_c0) / $n_trigger);
-        print "$i_energy, $i_c0, $n_trigger, $n_repeat\n";
+        my $d1 = $i_c1 - $i_c0;
+        my $d2 = $i_c2 - $i_c1;
+        $i_c0 -= 3;
+        $i_c1 -= 3;
+        $i_c2 -= 3;
+        print "energy at $i_energy, (c0, c1, c2) = ($i_c0, +$d1, +$d2), $n_trigger, $n_repeat\n";
     }
     elsif (/^\d+/ and $i_energy) {
         my @tlist = split /\s+/;
+        $i_data++;
         my $n = @tlist;
         my $energy = $tlist[$i_energy];
-        print "  energy = $energy...\n";
-        my (@data, @data2, @counts);
+        my @data;
         for (my $j = 0; $j<$n_trigger; $j++) {
             my $cnt = $n_repeat;
             if ($i_c0 + $n_repeat * $n_trigger + $j < $i_c1) {
                 $cnt++;
             }
-            my ($sum1, $sum2);
+            my $sum1;
             for (my $i = 0; $i<$cnt; $i++) {
-                my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j];
-                my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j];
-                my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j];
+                my $off=$i*$n_trigger+$j;
+                my $c0 = $tlist[$i_c0 + $off];
+                my $c1 = $tlist[$i_c1 + $off];
+                my $c2 = $tlist[$i_c2 + $off];
                 my $c = ($c1 + $c2) / 2 /$c0;
                 $sum1 += $c;
-                $sum2 += $c * $c;
             }
             $sum1 /= $cnt;
-            $sum2 /= $cnt;
-            $sum2 = sqrt($sum2 - ($sum1 * $sum1));
             $data[$j] = $sum1;
-            $data2[$j] = $sum2;
         }
+        print "  energy = $energy, \t$n points\n";
         push @out, [$energy, @data];
     }
 }

@@ -9,7 +9,7 @@ if (!-f $file or !$n_cluster or !$n_output) {
 my @data_out;
 push @data_out, get_header($n_output);
 
-print "Loading $file ...\n";
+print STDERR "Loading $file ...\n";
 my $flag;
 open In, "$file" or die "Can't open $file: $!\n";
 while(<In>){
@@ -23,12 +23,9 @@ while(<In>){
 }
 close In;
 
-open Out, ">diff-out.txt" or die "Can't write diff-out.txt: $!\n";
-print "  --> [diff-out.txt]\n";
 foreach my $l (@data_out) {
-    print Out join(' ', @$l). "\n";
+    print join(' ', @$l). "\n";
 }
-close Out;
 
 # ---- subroutines --------------------------------------------
 sub get_header {

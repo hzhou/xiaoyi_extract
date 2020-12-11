@@ -1,6 +1,6 @@
 page: avg_116
     module: perl
-    # arg: FeCN6_Async_2-00456
+    arg: FeCN6_Async_2-00452
     # stat: 1
 
     # my $file = "FeCN6_752kHz-00025"
@@ -12,16 +12,24 @@ page: avg_116
         mkdir "extract" or die "Can't mkdir extract.\n"
 
     my ($i_energy, $i_c0, $i_c1, $i_c2, $n_repeat, $n_trigger)
+    my ($i_Sa)
 
     my @out
+    my $i_data
     &call open_r, $file
         $if /^#L\s+N\s+Epoch\s+Energy/
 	    $call parse_header		    
         $elif /^\d+/ and $i_energy
-	    $call process_data
-            $(if:stat)
-                push @out, [$energy, @data, @data2]
-            $(else)
+            my @tlist = split /\s+/
+            $i_data++
+            # $if $i_data < 15
+            $(if:0)
+                $if $i_data<=3
+                    $call debug_data
+            $(if:0)
+                $call calibrate_data
+            $(if:1)
+                $call process_data
                 push @out, [$energy, @data]
 
     $if !-d "extract"
@@ -40,41 +48,82 @@ page: avg_116
 
 subcode: parse_header
     my @tlist = split /\s+/, $_
-    $for $i, $a in @tlist
+    my $i=-1
+    $for $a in @tlist
 	$if $a eq "Energy"
-	    $i_energy = $i - 1
+	    $i_energy = $i
 	$elif $a eq "c0o0b0"
-	    $i_c0 = $i - 1
+	    $i_c0 = $i
 	$elif $a eq "c1o0b0"
-	    $i_c1 = $i - 1
+	    $i_c1 = $i
 	$elif $a eq "c2o0b0"
-	    $i_c2 = $i - 1
+	    $i_c2 = $i
 	$elif $a eq "c0o1b0"
-	    $n_trigger = ($i - 1) - $i_c0
+	    $n_trigger = $i - $i_c0
+        $elif $a eq "Sa"
+            $i_Sa = $i
+        $i++
     $n_repeat = int(($i_c1 - $i_c0) / $n_trigger)
-    $print $i_energy, $i_c0, $n_trigger, $n_repeat
+    my $d1 = $i_c1 - $i_c0
+    my $d2 = $i_c2 - $i_c1
+    # !hack
+    $i_c0 -= 3
+    $i_c1 -= 3
+    $i_c2 -= 3
+    $print energy at $i_energy, (c0, c1, c2) = ($i_c0, +$d1, +$d2), $n_trigger, $n_repeat
 
 subcode: process_data
-    my @tlist = split /\s+/
     my $n = @tlist
     my $energy = $tlist[$i_energy]
-    $print "  energy = $energy..."
-    my (@data, @data2, @counts)
+    my @data
     $for $j=0:$n_trigger
 	my $cnt = $n_repeat
 	$if $i_c0 + $n_repeat * $n_trigger + $j < $i_c1
 	    $cnt++
-	my ($sum1, $sum2)
+	my $sum1
 	$for $i=0:$cnt
-	    my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j]
-	    my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j]
-	    my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j]
+            my $off=$i*$n_trigger+$j
+	    my $c0 = $tlist[$i_c0 + $off]
+	    my $c1 = $tlist[$i_c1 + $off]
+	    my $c2 = $tlist[$i_c2 + $off]
 	    my $c = ($c1 + $c2) / 2 /$c0
 	    $sum1 += $c
-	    $sum2 += $c * $c
 	$sum1 /= $cnt
-	$sum2 /= $cnt
-	$sum2 = sqrt($sum2 - ($sum1 * $sum1))
 	$data[$j] = $sum1
-	$data2[$j] = $sum2
+    $print "  energy = $energy, \t$n points"
 
+subcode: calibrate_data
+    my $n = @tlist
+    my $energy = $tlist[$i_energy]
+    my (@data, @data2, @counts)
+    # $for $j=0:$n_trigger
+    my $j = 11
+	my $sum1
+        my ($c0_sum, $c1_sum, $c2_sum)
+        my $cnt = 17
+	$for $i=1:$cnt+1
+            my $off=$i*$n_trigger+$j
+	    my $c0 = $tlist[$i_c0 + $off]
+	    my $c1 = $tlist[$i_c1 + $off]
+	    my $c2 = $tlist[$i_c2 + $off]
+	    my $c = ($c1 + $c2) / 2 /$c0
+	    $sum1 += $c
+            $c0_sum += $c0
+            $c1_sum += $c1
+            $c2_sum += $c2
+	$sum1 /= $cnt
+        $c0_sum /= $cnt
+        $c1_sum /= $cnt
+        $c2_sum /= $cnt
+        my $alt = ($c1_sum + $c2_sum) / 2/ $c0_sum
+    $print n_trigger = $n_trigger
+    my $off = 18 * $n_trigger + 843
+    my $i = $i_c2+$off
+    $print "           $energy, my avg-$j: $sum1, Sa:$tlist[$i_Sa], alt:$alt -- c2[$off] = $tlist[$i]"
+
+subcode: debug_data
+    $for $i=0:17
+        my $c0 = $tlist[$i_c0+$i*$n_trigger]
+        my $c1 = $tlist[$i_c1+$i*$n_trigger]
+        my $c2 = $tlist[$i_c2+$i*$n_trigger]
+        $print $i: $c0, $c1, $c2
