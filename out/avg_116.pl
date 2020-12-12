@@ -54,6 +54,15 @@ while(<In>){
         $i_data++;
         my $n = @tlist;
         my $energy = $tlist[$i_energy];
+        my (@c0_data, @c0_count);
+        for (my $i = $i_c0; $i<$i_c1; $i++) {
+            my $j = ($i-$i_c0) % 9;
+            $c0_data[$j]+=$tlist[$i];
+            $c0_count[$j]++;
+        }
+        for (my $j = 0; $j<9; $j++) {
+            $c0_data[$j] /= $c0_count[$j];
+        }
         my @data;
         for (my $j = 0; $j<$n_trigger; $j++) {
             my $cnt = $n_repeat;
@@ -63,7 +72,7 @@ while(<In>){
             my $sum1;
             for (my $i = 0; $i<$cnt; $i++) {
                 my $off=$i*$n_trigger+$j;
-                my $c0 = $tlist[$i_c0 + $off];
+                my $c0 = $c0_data[$off % 9];
                 my $c1 = $tlist[$i_c1 + $off];
                 my $c2 = $tlist[$i_c2 + $off];
                 my $c = ($c1 + $c2) / 2 /$c0;

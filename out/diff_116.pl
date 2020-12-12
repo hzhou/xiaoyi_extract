@@ -2,8 +2,11 @@
 use strict;
 
 my ($file, $n_cluster, $n_output) = @ARGV;
-if (!-f $file or !$n_cluster or !$n_output) {
+if (!$file or !$n_cluster or !$n_output) {
     die "Usage: $0 $file n_cluster n_output\n";
+}
+if (!-f $file) {
+    die " File $file not found!\n";
 }
 
 my @data_out;
@@ -26,6 +29,7 @@ close In;
 foreach my $l (@data_out) {
     print join(' ', @$l). "\n";
 }
+print STDERR "Done.\n";
 
 # ---- subroutines --------------------------------------------
 sub get_header {

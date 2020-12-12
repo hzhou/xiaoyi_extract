@@ -2,8 +2,10 @@ page: diff_116
     module: perl
 
     my ($file, $n_cluster, $n_output) = @ARGV
-    $if !-f $file or !$n_cluster or !$n_output
+    $if !$file or !$n_cluster or !$n_output
         die "Usage: $0 $file n_cluster n_output\n"
+    $if !-f $file
+        die " File $file not found!\n"
 
     my @data_out
     push @data_out, get_header($n_output)
@@ -19,6 +21,7 @@ page: diff_116
 
     $foreach $l in @data_out
         print join(' ', @$l). "\n"
+    print STDERR "Done.\n"
 
 fncode: get_diff($l, $n_cluster, $n_output)
     $call get_ground

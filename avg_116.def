@@ -75,6 +75,7 @@ subcode: parse_header
 subcode: process_data
     my $n = @tlist
     my $energy = $tlist[$i_energy]
+    $call avg_c0
     my @data
     $for $j=0:$n_trigger
 	my $cnt = $n_repeat
@@ -83,7 +84,7 @@ subcode: process_data
 	my $sum1
 	$for $i=0:$cnt
             my $off=$i*$n_trigger+$j
-	    my $c0 = $tlist[$i_c0 + $off]
+            my $c0 = $c0_data[$off % 9]
 	    my $c1 = $tlist[$i_c1 + $off]
 	    my $c2 = $tlist[$i_c2 + $off]
 	    my $c = ($c1 + $c2) / 2 /$c0
@@ -91,6 +92,15 @@ subcode: process_data
 	$sum1 /= $cnt
 	$data[$j] = $sum1
     $print "  energy = $energy, \t$n points"
+
+    subcode: avg_c0
+        my (@c0_data, @c0_count)
+        $for $i=$i_c0:$i_c1
+            my $j = ($i-$i_c0) % 9
+            $c0_data[$j]+=$tlist[$i]
+            $c0_count[$j]++
+        $for $j=0:9
+            $c0_data[$j] /= $c0_count[$j]
 
 subcode: calibrate_data
     my $n = @tlist
