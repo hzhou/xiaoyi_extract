@@ -41,26 +41,31 @@ while(<In>){
     }
     elsif (/^\d+/ and $i_energy) {
         my @tlist = split /\s+/;
-        my $n = @tlist;
         my $energy = $tlist[$i_energy];
         print "  energy = $energy...\n";
-        my (@data, @data2, @counts);
+        my (@c0_data, @c0_count);
+        for (my $i = $i_c0; $i<$i_c1; $i++) {
+            my $j=($i-$i_c0) % 9;
+            $c0_data[$j] += $tlist[$i];
+            $c0_count[$j]++;
+        }
+        for (my $j = 0; $j<9; $j++) {
+            $c0_data[$j] /= $c0_count[$j];
+        }
+        my (@data, @data2);
         for (my $j = 0; $j<$n_trigger; $j++) {
-            my $cnt = $n_repeat;
-            if ($i_c0 + $n_repeat * $n_trigger + $j < $i_c1) {
-                $cnt++;
-            }
             my ($sum1, $sum2);
-            for (my $i = 0; $i<$cnt; $i++) {
-                my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j];
-                my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j];
-                my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j];
+            for (my $i = 0; $i<$n_repeat; $i++) {
+                my $off = $i*$n_trigger + $j;
+                my $c0 = $c0_data[$off % 9];
+                my $c1 = $tlist[$i_c1 + $off];
+                my $c2 = $tlist[$i_c2 + $off];
                 my $c = ($c1 + $c2) / 2 /$c0;
                 $sum1 += $c;
                 $sum2 += $c * $c;
             }
-            $sum1 /= $cnt;
-            $sum2 /= $cnt;
+            $sum1 /= $n_repeat;
+            $sum2 /= $n_repeat;
             $sum2 = sqrt($sum2 - ($sum1 * $sum1));
             $data[$j] = $sum1;
             $data2[$j] = $sum2;
@@ -70,9 +75,6 @@ while(<In>){
 }
 close In;
 
-if (!-d "extract") {
-    mkdir "extract";
-}
 open Out, ">extract/extract-$file" or die "Can't write extract/extract-$file: $!\n";
 print "  --> [extract/extract-$file]\n";
 my @header = ("Energy");

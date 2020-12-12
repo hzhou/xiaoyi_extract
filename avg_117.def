@@ -33,13 +33,15 @@ page: avg_117
             my @tlist = split /\s+/
             my $energy = $tlist[$i_energy]
             $print "  energy = $energy..."
+            $call get_c0_avg
             my (@data, @data2)
             $for $j=0:$n_trigger
                 my ($sum1, $sum2)
                 $for $i=0:$n_repeat
-                    my $c0 = $tlist[$i_c0 + $i * $n_trigger + $j]
-                    my $c1 = $tlist[$i_c1 + $i * $n_trigger + $j]
-                    my $c2 = $tlist[$i_c2 + $i * $n_trigger + $j]
+                    my $off = $i*$n_trigger + $j
+                    my $c0 = $c0_data[$off % 9]
+                    my $c1 = $tlist[$i_c1 + $off]
+                    my $c2 = $tlist[$i_c2 + $off]
                     my $c = ($c1 + $c2) / 2 /$c0
                     $sum1 += $c
                     $sum2 += $c * $c
@@ -65,6 +67,15 @@ page: avg_117
         $foreach $d in @out
             print Out join(' ', @$d)."\n"
 
+
+subcode: get_c0_avg
+    my (@c0_data, @c0_count)
+    $for $i=$i_c0:$i_c1
+        my $j=($i-$i_c0) % 9
+        $c0_data[$j] += $tlist[$i]
+        $c0_count[$j]++
+    $for $j=0:9
+        $c0_data[$j] /= $c0_count[$j]
 
 
 
