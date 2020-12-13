@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 use strict;
 
+our $trigger = 26;
+
+
 my ($file, $n_cluster, $n_output) = @ARGV;
 if (!-f $file or !$n_cluster or !$n_output) {
     die "Usage: $0 $file n_cluster n_output\n";
@@ -45,19 +48,18 @@ sub get_header {
 
 sub get_diff {
     my ($l, $n_cluster, $n_output) = @_;
-    my @ground;
-    for (my $i = 1; $i<27; $i++) {
-        my $j = ($i) % 9;
-        if ($i+18>=26) {
-            $ground[$j] = ($l->[$i] + $l->[$i+9] + $l->[$i+18]) / 3;
-        }
-        else {
-            $ground[$j] = ($l->[$i] + $l->[$i+9]) / 2;
-        }
+    my $energy = shift @$l;
+    my (@ground, @counters);
+    for (my $i = 0; $i<$trigger; $i++) {
+        my $j = $i % 9;
+        $ground[$j] += $l->[$i];
+        $counters[$j]++;
     }
-
+    for (my $j = 0; $j<9; $j++) {
+        $ground[$j] /= $counters[$j];
+    }
     my @l_avg;
-    my $i = 27;
+    my $i = $trigger;
     for (my $i_out = 0; $i_out<$n_output; $i_out++) {
         my $sum;
         for (my $i_c = 0; $i_c<$n_cluster; $i_c++) {
@@ -68,13 +70,13 @@ sub get_diff {
     }
 
     my $n = @$l;
-    for (my $i = 27; $i<$n; $i++) {
+    for (my $i = $trigger; $i<$n; $i++) {
         my $j = ($i) % 9;
         $l->[$i] -= $ground[$j];
     }
 
     my @l_diff;
-    my $i = 27;
+    my $i = $trigger;
     for (my $i_out = 0; $i_out<$n_output; $i_out++) {
         my $sum;
         for (my $i_c = 0; $i_c<$n_cluster; $i_c++) {
@@ -83,6 +85,7 @@ sub get_diff {
         }
         push @l_diff, $sum/$n_cluster;
     }
-    return [$l->[0], @l_avg, @l_diff];
+
+    return [$energy, @l_avg, @l_diff];
 }
 

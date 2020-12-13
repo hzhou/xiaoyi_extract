@@ -1,6 +1,8 @@
 page: diff_117
     module: perl
 
+    $global $trigger = 26
+
     my ($file, $n_cluster, $n_output) = @ARGV
     $if !-f $file or !$n_cluster or !$n_output
         die "Usage: $0 $file n_cluster n_output\n"
@@ -23,41 +25,39 @@ page: diff_117
 
 
 fncode: get_diff($l, $n_cluster, $n_output)
-    # 26 ground state into 3 group of 9
-    my @ground
-    $for $i=1:27
-        my $j = ($i) % 9 # use the fact that 27 is multiple of 9 and i=27 -> j=0
-        $if $i+18>=26
-            $ground[$j] = ($l->[$i] + $l->[$i+9] + $l->[$i+18]) / 3
-        $else
-            $ground[$j] = ($l->[$i] + $l->[$i+9]) / 2
-
-    # cluster it
-    my @l_avg
-    my $i = 27
-    $for $i_out=0:$n_output
-        my $sum
-        $for $i_c=0:$n_cluster
-            $sum += $l->[$i]
-            $i++
-        push @l_avg, $sum/$n_cluster
+    my $energy = shift @$l
+    $call get_ground
+    $call cluster, avg
 
     # calc diff
     my $n = @$l
-    $for $i=27:$n
+    $for $i=$trigger:$n
         my $j = ($i) % 9
         $l->[$i] -= $ground[$j]
 
-    # cluster it
-    my @l_diff
-    my $i = 27
-    $for $i_out=0:$n_output
-        my $sum
-        $for $i_c=0:$n_cluster
-            $sum += $l->[$i]
-            $i++
-        push @l_diff, $sum/$n_cluster
-    return [$l->[0], @l_avg, @l_diff]
+    $call cluster, diff
+
+    return [$energy, @l_avg, @l_diff]
+
+    subcode: get_ground
+        my (@ground, @counters)
+        $for $i=0:$trigger
+            my $j = $i % 9
+            $ground[$j] += $l->[$i]
+            $counters[$j]++
+        $for $j=0:9
+            $ground[$j] /= $counters[$j]
+
+    subcode: cluster(a)
+        my @l_$(a)
+        my $i = $trigger
+        $for $i_out=0:$n_output
+            my $sum
+            $for $i_c=0:$n_cluster
+                $sum += $l->[$i]
+                $i++
+            push @l_$(a), $sum/$n_cluster
+
 
 fncode: get_header($n_output)
     my @tlist = "Energy"
