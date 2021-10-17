@@ -1,0 +1,11 @@
+
+include: macros/tk_gui.def
+page: tk_extract
+    module: python
+    title: XTA MXP data process (TRR Group)
+
+    &call tk_main, 800x600
+        $call content
+
+subcode: content
+    $call pack, lbl, Label, "Hello World"

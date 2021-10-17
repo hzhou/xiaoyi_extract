@@ -1,0 +1,106 @@
+subcode: tk_main(size)
+    $import tkinter as tk
+    $import tkinter.filedialog as fd
+    $import tkinter.messagebox as msgbox
+
+    window = tk.Tk()
+    $(if:title)
+        window.title("$(title)")
+    window.resizable(False, False)
+    window.geometry('$(size)')
+    BLOCK
+    window.mainloop()
+
+#---------------------------------------- 
+subcode: _autoload
+    class G:
+        status = ""
+
+subcode: input_file(name, btn_text)
+    $call input_fd, file, $(name), $(btn_text)
+subcode: input_folder(name, btn_text)
+    $call input_fd, folder, $(name), $(btn_text)
+
+subcode: input_fd(type, name, btn_text)
+    G.$(name) = ""
+    G.btn_$(name) = None
+    G.lbl_$(name) = None
+    G.lbl_$(name)_info = None
+
+    def command_$(name)():
+        $(if:type=folder)
+            G.$(name) = fd.askdirectory()
+        $(else)
+            G.$(name) = fd.askopenfilename()
+        $call @on_$(name)
+
+    &call col, width=30
+        $call pack, G.btn_$(name), Button, text="$(btn_text)", command=command_$(name)
+        $call pack, G.lbl_$(name), Label, text=G.$(name)
+        $call pack, G.lbl_$(name)_info, Label, text=""
+
+subcode: input_entry(name, title)
+    G.$(name) = ""
+    G.entry_$(name) = None
+    G.lbl_$(name) = None
+
+    &call col, width=40
+        $call pack, G.lbl_$(name), Label, text="$(title)"
+        $call pack, G.entry_$(name), Entry, width=15
+        $call hskip, 20
+
+subcode: input_select(name, title, @choices)
+    choices = [$(choices)]
+    var = tk.StringVar($(frm))
+    var.set(choices[0])
+    &call col, width=40
+        $call pack, G.lbl_$(name), Label, text="$(title)"
+        $call pack, G.select_$(name), OptionMenu, var, *choices
+        $call hskip, 20
+
+subcode: set_entry(var, text)
+    $(var).delete(0, tk.END)
+    $(var).insert(0, $(text))
+
+#---------------------------------------- 
+subcode: pack(var, widget, @attr)
+    $(if:attr)
+        $(var) = tk.$(widget)($(frm), $(attr))
+    $(else)
+        $(var) = tk.$(widget)($(frm))
+    $(var).pack()
+
+#---------------------------------------- 
+macros:
+    frm: window
+    frm_idx: 0
+
+subcode: hskip(w)
+    frm = tk.Frame($(frm), width=$(w))
+    frm.pack(side=tk.LEFT)
+
+subcode: vskip(h)
+    frm = tk.Frame($(frm), height=$(h))
+    frm.pack(side=tk.TOP)
+
+subcode: row(@attr)
+    $(set:frm0=$(frm))
+    $(eval:frm_idx=$(frm_idx)+1)
+    $(set:frm=frm$(frm_idx))
+    $(if:attr)
+        $(frm) = tk.Frame($(frm0), $(attr))
+    $(else)
+        $(frm) = tk.Frame($(frm0))
+    $(frm).pack(side=tk.TOP, pady=20)
+    BLOCK
+
+subcode: col(@attr)
+    $(set:frm0=$(frm))
+    $(eval:frm_idx=$(frm_idx)+1)
+    $(set:frm=frm$(frm_idx))
+    $(if:attr)
+        $(frm) = tk.Frame($(frm0), $(attr))
+    $(else)
+        $(frm) = tk.Frame($(frm0))
+    $(frm).pack(side=tk.LEFT, padx=20)
+    BLOCK
