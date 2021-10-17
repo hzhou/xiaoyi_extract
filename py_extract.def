@@ -12,11 +12,11 @@ page: trxas_extract
     $import numpy as np
     $import re
     t = Extract()
-    t.read("data/sample3-00156")
-    print(repr(t.cols))
-    print(repr(t.data))
+    # t.read("data/sample3-00156")
+    t.read("data/monomer-00029")
+    print("  %s cols, %s rows" % (t.num_cols, t.num_rows))
     # t.process_perbunch('data/t.out', 29, 4, 2, 4)
-    t.process_avgbunch('data/t.out', 29, 4, 2, 4)
+    t.process_avgbunch('data/t.out', 229, 4, 2, 4)
 
 subcode: _autoload
     $call class_RE
@@ -58,8 +58,7 @@ subcode: process_trxas
         $call calc_background, pre_n_avg
         $call out_line_b_diff, aft_n_avg
 
-    print(repr(data_out))
-    np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f')
+    np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
 
     subcode: calc_background(pre_n_avg) # row_in
         back0, back1, back2, back12 = [], [], [], []

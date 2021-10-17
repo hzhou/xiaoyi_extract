@@ -12,9 +12,13 @@ subcode: tk_main(size)
     window.mainloop()
 
 #---------------------------------------- 
+fncode: msgbox(msg)
+    tk.messagebox.showinfo(message=msg)
+
+#---------------------------------------- 
 subcode: _autoload
     class G:
-        status = ""
+        opts = {}
 
 subcode: input_file(name, btn_text)
     $call input_fd, file, $(name), $(btn_text)
@@ -22,21 +26,21 @@ subcode: input_folder(name, btn_text)
     $call input_fd, folder, $(name), $(btn_text)
 
 subcode: input_fd(type, name, btn_text)
-    G.$(name) = ""
+    G.opts['$(name)'] = ""
     G.btn_$(name) = None
     G.lbl_$(name) = None
     G.lbl_$(name)_info = None
 
     def command_$(name)():
         $(if:type=folder)
-            G.$(name) = fd.askdirectory()
+            G.opts['$(name)'] = fd.askdirectory()
         $(else)
-            G.$(name) = fd.askopenfilename()
+            G.opts['$(name)'] = fd.askopenfilename()
         $call @on_$(name)
 
     &call col, width=30
         $call pack, G.btn_$(name), Button, text="$(btn_text)", command=command_$(name)
-        $call pack, G.lbl_$(name), Label, text=G.$(name)
+        $call pack, G.lbl_$(name), Label, text=G.opts['$(name)']
         $call pack, G.lbl_$(name)_info, Label, text=""
 
 subcode: input_entry(name, title)
@@ -51,11 +55,17 @@ subcode: input_entry(name, title)
 
 subcode: input_select(name, title, @choices)
     choices = [$(choices)]
-    var = tk.StringVar($(frm))
-    var.set(choices[0])
+    G.opt_$(name) = tk.StringVar($(frm))
+    G.opt_$(name).set(choices[0])
+    G.$(name) = choices[0]
+
+    def command_$(name)(*args):
+        G.$(name) = G.opt_$(name).get()
+        $call @on_$(name)
+
     &call col, width=40
         $call pack, G.lbl_$(name), Label, text="$(title)"
-        $call pack, G.select_$(name), OptionMenu, var, *choices
+        $call pack, tmp_select, OptionMenu, G.opt_$(name), *choices, command=command_$(name)
         $call hskip, 20
 
 subcode: set_entry(var, text)
@@ -83,7 +93,7 @@ subcode: vskip(h)
     frm = tk.Frame($(frm), height=$(h))
     frm.pack(side=tk.TOP)
 
-subcode: row(@attr)
+subcode: row(pady, @attr)
     $(set:frm0=$(frm))
     $(eval:frm_idx=$(frm_idx)+1)
     $(set:frm=frm$(frm_idx))
@@ -91,7 +101,8 @@ subcode: row(@attr)
         $(frm) = tk.Frame($(frm0), $(attr))
     $(else)
         $(frm) = tk.Frame($(frm0))
-    $(frm).pack(side=tk.TOP, pady=20)
+
+    $(frm).pack(side=tk.TOP, pady=$(pady))
     BLOCK
 
 subcode: col(@attr)

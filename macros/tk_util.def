@@ -1,0 +1,50 @@
+fncode: init_default
+    $import os.path
+    $if os.path.exists("config")
+        with open("config") as In:
+            for l in In:
+                $if RE.match(r'(\w+):\s*(.*)', l)
+                    G.opts[RE.m.group(1)] = RE.m.group(2)
+    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt)
+        $if '$1' in G.opts
+            $call set_entry, G.entry_$1, G.opts["$1"]
+
+    $if G.opts['folder_in']
+        $call on_folder_in
+
+    $if G.opts['folder_out']
+        $call on_folder_out
+
+fncode: save_opts
+    f = open("config", "w")
+    for k in G.opts:
+        f.write("%s: %s\n" % (k, G.opts[k]))
+    f.close()
+
+fncode: load_files(folder_in)
+    $import os, os.path
+    G.idx_min = '99999'
+    G.idx_max = '00000'
+    G.name = None
+    G.files = []
+    for root, dirs, files in os.walk(folder_in):
+        for name in files:
+            $if RE.match(r'(.*)-(\d+)$', name)
+                filepath = os.path.join(root, name)
+                idx = RE.m.group(2)
+
+                $if not G.name and Extract.is_sample_data(filepath)
+                    $if not G.opts['file_in']
+                        G.opts['file_in'] = filepath
+                    $if RE.match(r'(.*)-\d+$', name)
+                        G.name = RE.m.group(1)
+
+                # assert G.name
+                G.files.append(filepath)
+                $if int(G.idx_min) > int(idx)
+                    G.idx_min = idx
+                $if int(G.idx_max) < int(idx)
+                    G.idx_max = idx
+
+fncode: get_file_out(file_in)                    
+    return os.path.join(G.opts['folder_out'], os.path.basename(file_in) + '.txt')
