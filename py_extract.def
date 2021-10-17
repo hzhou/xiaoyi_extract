@@ -58,7 +58,6 @@ subcode: process_trxas
         $call calc_background, pre_n_avg
         $call out_line_b_diff, aft_n_avg
 
-    print(repr(data_out))
     np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f')
 
     subcode: calc_background(pre_n_avg) # row_in

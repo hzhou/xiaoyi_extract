@@ -42,28 +42,57 @@ subcode: _autoload
     $import * from trxas_extract
 
 subcode: init_default
-    $call set_entry, G.entry_folder_out, "../extract"
+    $import os.path
+    G.opts={"folder_out":"../extract"}
+    $if os.path.exists("config")
+        with open("config") as In:
+            for l in In:
+                $if RE.match(r'(\w+):\s*(.*)', l)
+                    G.opts[RE.m.group(1)] = RE.m.group(2)
+    $(for:folder_out, trigger, range, pre_n_avg, aft_n_avg, aft_npnt)
+        $if '$1' in G.opts
+            $call set_entry, G.entry_$1, G.opts["$1"]
+    $if G.folder_in
+        check_folder(G.folder_in)
+
+subcode: save_opts
+    f = open("config", "w")
+    for k in G.opts:
+        f.write("%s: %s\n" % (k, G.opts[k]))
+    f.close()
 
 fncode: command_run
-    $(for:trigger, range, gs_method, pre_n_avg, aft_n_avg, aft_npnt, folder_out)
+    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt, folder_out)
         G.$1 = G.entry_$1.get()
+        G.opts['$1'] = G.$1
+    $(for:folder_in, gs_method)
+        G.opts['$1'] = G.$1
+    $call save_opts
+
     $if RE.match(r'(\d+)-(\d+)', G.range)
         G.idx_min = int(RE.m.group(1))
         G.idx_max = int(RE.m.group(2))
     # $call on_trigger
     idx = G.idx_min
     $while idx <= G.idx_max
-        file_in = "%s/%s_%5d" % (G.folder_in, G.name, idx)
+        file_name = "%s-%05d" % (G.name, idx)
+        file_in = "%s/%s" % (G.folder_in, file_name)
         $if G.folder_out.startswith('/')
-            file_out = "%s/%s_%5d" % (G.folder_out, G.name, idx)
+            file_out = G.folder_out
         $else
-            file_out = "%s/%s/%s_%5d" % (G.folder_in, G.folder_out, G.name, idx)
+            file_out = G.folder_in + '/' + G.folder_out
+        $if not os.path.exists(file_out)
+            os.mkdir(file_out)
+        file_out += "/" + file_name
+
         trxas = Extract()
         trxas.read(file_in)
-        $if True
+        $if G.gs_method == 'avg bunch GS'
             trxas.process_avgbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
         $else
             trxas.process_perbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+
+        idx++
     
 fncode: check_folder(folder)
     $import listdir from os

@@ -51,11 +51,17 @@ subcode: input_entry(name, title)
 
 subcode: input_select(name, title, @choices)
     choices = [$(choices)]
-    var = tk.StringVar($(frm))
-    var.set(choices[0])
+    G.opt_$(name) = tk.StringVar($(frm))
+    G.opt_$(name).set(choices[0])
+    G.$(name) = choices[0]
+
+    def command_$(name)(*args):
+        G.$(name) = G.opt_$(name).get()
+        $call @on_$(name)
+
     &call col, width=40
         $call pack, G.lbl_$(name), Label, text="$(title)"
-        $call pack, G.select_$(name), OptionMenu, var, *choices
+        $call pack, tmp_select, OptionMenu, G.opt_$(name), *choices, command=command_$(name)
         $call hskip, 20
 
 subcode: set_entry(var, text)
