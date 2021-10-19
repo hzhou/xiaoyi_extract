@@ -4,7 +4,7 @@ folder_out: /home/hzhou/projects/xiaoyi/extract/extract
 output_dir: out
 module: perl
 trigger: 42
-range: 00156-00156
+range: 00029-00156
 pre_n_avg: 2
 aft_n_avg: 2
 aft_npnt: 4

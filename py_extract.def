@@ -1,5 +1,3 @@
-module: python
-
 #L N  Epoch  Energy k ... c0o0b0  c0o0b1  c0o1b0 ... c1o0b0 c1o0b1  c1o1b0 ...
 # c - channel / detector 3
 # o - orbital
@@ -8,6 +6,7 @@ module: python
 
 
 page: trxas_extract
+    module: python
     # output_dir: /home/hzhou/projects/jupyter
     $import numpy as np
     $import re
@@ -16,11 +15,13 @@ page: trxas_extract
     t.read("data/monomer-00029")
     print("  %s cols, %s rows" % (t.num_cols, t.num_rows))
     # t.process_perbunch('data/t.out', 29, 4, 2, 4)
-    t.process_avgbunch('data/t.out', 229, 4, 2, 4)
+    # t.process_avgbunch('data/t.out', 229, 4, 2, 4)
+    print(Extract.average_output("data", 156, 156))
 
 subcode: _autoload
     $call class_RE
     class Extract:
+        # -- class methods --
         def is_sample_data(file):
             f = open(file, 'r')
             line = f.readline()
@@ -29,8 +30,37 @@ subcode: _autoload
             $else
                 return False
 
+        def average_output(folder, idx_min, idx_max):
+            def get_header(file):
+                f = open(file, 'r')
+                header = f.readline()
+                f.close()
+                return header.rstrip()
+
+            $import os, os.path
+            header_line = None
+            data = []
+            $for filename in os.listdir(folder)
+                $if filename.startswith('avg')
+                    continue
+                m = re.match(r'.*-(\d+)\.txt$', filename)
+                $if m and int(m.group(1)) >= idx_min and int(m.group(1)) <= idx_max
+                    file = os.path.join(folder, filename)
+                    $if not header_line
+                        header_line = get_header(file)
+                    data.append(np.loadtxt(file, skiprows=1))
+            t = np.mean(data, axis=0)
+            file_out = os.path.join(folder, "avg-%d-%d.txt" % (idx_min, idx_max))
+            np.savetxt(file_out, t, header=header_line, fmt='%.6f', comments='')
+
+            return (len(data), file_out)
+            return "Averaging %d data files -> %s" % (len(data), file_out)
+
+        # -- instance methods --
         def read(self, file):
+            print("reading %s ..." % file)
             $call read_trxas
+            return True
         def process_perbunch(self, fileout, trig, pre_n_avg, aft_n_avg, n_pnt):
             $(set:mode=perbunch)
             $call process_trxas
@@ -126,8 +156,14 @@ subcode: read_trxas # file
         $for line in f
             $if line.startswith('#L ')
                 header = line[3:]
+                $if not re.match(r'#L .* Energy ', line)
+                    print("  file is not a energy scan: %s, header: %s..." % (file, line[0:20]))
+                    return False
             $elif re.match(r'\d.*', line) and header
                 rows.append(line)
+    $if not rows
+        print("  file empty")
+        return False
     $call parse_header
     $call check_header
     self.num_cols = len(rows[0].split())
@@ -166,5 +202,5 @@ subcode: read_trxas # file
 
         subcode: assert(cond)
             $if !($(cond))
-                raise Exception("assert error: ! [$(cond)]\n")
-
+                print(" check failed for file for $(cond) file: %s" % file)
+                return False

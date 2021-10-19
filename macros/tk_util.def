@@ -21,6 +21,21 @@ fncode: save_opts
         f.write("%s: %s\n" % (k, G.opts[k]))
     f.close()
 
+fncode: load_txt_range(folder)
+    $import os, os.path
+    idx_min = '99999'
+    idx_max = '00000'
+    for file in os.listdir(folder):
+        $if file.startswith('avg')
+            continue
+        $if RE.match(r'(.*)-(\d+)\.txt$', file)
+            idx = RE.m.group(2)
+            $if int(idx_min) > int(idx)
+                idx_min = idx
+            $if int(idx_max) < int(idx)
+                idx_max = idx
+    return "%s-%s" % (idx_min, idx_max)
+
 fncode: load_files(folder_in)
     $import os, os.path
     G.idx_min = '99999'
@@ -48,3 +63,11 @@ fncode: load_files(folder_in)
 
 fncode: get_file_out(file_in)                    
     return os.path.join(G.opts['folder_out'], os.path.basename(file_in) + '.txt')
+
+fncode: shortname(str)
+    $(set:N=100)
+    $if len(str) > $(N)
+        return "..." + str[-$(N):]
+    $else
+        return str
+
