@@ -1,0 +1,151 @@
+include: macros/tk_gui.def
+page: tk_extract
+    module: python
+    title: XTA MXP data process (TRR Group)
+
+    &call tk_main, 800x600
+        $call content
+
+subcode: input_trigger
+    &call col, width=30
+        G.lbl_trigger = tk.Label($(frm), text="Trigger")
+        G.entry_trigger = tk.Entry($(frm), width=10)
+        G.lbl_trigger.pack()
+        G.entry_trigger.pack()
+
+subcode: content
+    $(if:0)
+        G.title = tk.Label(text="$(title)")
+        G.title.pack()
+
+    $call vskip, 20
+    &call row
+        $call input_file, file_in, Check Data File
+        $call input_folder, folder_in, Select Input Folder
+        $call input_entry, folder_out, Select Output Folder
+    &call row
+        $call input_entry, trigger, Trigger\n(#th bunch)
+        $call input_entry, range, File index range\n(min - max)
+        $call input_select, gs_method, Ground State Method\n, 'per bunch GS', 'avg bunch GS'
+    &call row
+        $call input_entry, pre_n_avg, Number of orbitals\nfor GS
+        $call input_entry, aft_n_avg, Number of orbitals\nfor spectrum
+        $call input_entry, aft_npnt, Number of output\n TR spectra
+
+    $list command_run
+    &call row
+        $call pack, btn, Button, text="Run", command=command_run
+
+    $call init_default
+
+subcode: _autoload
+    $import * from trxas_extract
+
+subcode: init_default
+    $import os.path
+    G.opts={"folder_out":"../extract"}
+    $if os.path.exists("config")
+        with open("config") as In:
+            for l in In:
+                $if RE.match(r'(\w+):\s*(.*)', l)
+                    G.opts[RE.m.group(1)] = RE.m.group(2)
+    $(for:folder_out, trigger, range, pre_n_avg, aft_n_avg, aft_npnt)
+        $if '$1' in G.opts
+            $call set_entry, G.entry_$1, G.opts["$1"]
+    $if G.folder_in
+        check_folder(G.folder_in)
+
+subcode: save_opts
+    f = open("config", "w")
+    for k in G.opts:
+        f.write("%s: %s\n" % (k, G.opts[k]))
+    f.close()
+
+fncode: command_run
+    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt, folder_out)
+        G.$1 = G.entry_$1.get()
+        G.opts['$1'] = G.$1
+    $(for:folder_in, gs_method)
+        G.opts['$1'] = G.$1
+    $call save_opts
+
+    $if RE.match(r'(\d+)-(\d+)', G.range)
+        G.idx_min = int(RE.m.group(1))
+        G.idx_max = int(RE.m.group(2))
+    # $call on_trigger
+    idx = G.idx_min
+    $while idx <= G.idx_max
+        file_name = "%s-%05d" % (G.name, idx)
+        file_in = "%s/%s" % (G.folder_in, file_name)
+        $if G.folder_out.startswith('/')
+            file_out = G.folder_out
+        $else
+            file_out = G.folder_in + '/' + G.folder_out
+        $if not os.path.exists(file_out)
+            os.mkdir(file_out)
+        file_out += "/" + file_name
+
+        trxas = Extract()
+        trxas.read(file_in)
+        $if G.gs_method == 'avg bunch GS'
+            trxas.process_avgbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+        $else
+            trxas.process_perbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+
+        idx++
+    
+fncode: check_folder(folder)
+    $import listdir from os
+    G.name = None
+    G.idx_min = '99999'
+    G.idx_max = '00000'
+    $for f in listdir(folder)
+        filepath = folder + '/' + f
+        $if not G.name and Extract.is_sample_data(filepath)
+            $if not G.file_in
+                G.file_in = filepath
+            $if RE.match(r'(.*)-\d+$', f)
+                G.name = RE.m.group(1)
+        $if G.name and RE.match(r'(.*)-(\d+)$', f)
+            $if int(G.idx_min) > int(RE.m.group(2))
+                G.idx_min = RE.m.group(2)
+            $if int(G.idx_max) < int(RE.m.group(2))
+                G.idx_max = RE.m.group(2)
+    $if G.name
+        $call set_entry, G.entry_range, "%s-%s" % (G.idx_min, G.idx_max)
+
+    G.lbl_folder_in.config(text=shortname(folder))
+    G.btn_folder_in.config(text = "Change Input Folder")
+
+fncode: check_file(file)
+    G.lbl_file_in.config(text=shortname(file))
+    trxas = Extract()
+    trxas.read(file)
+    msg = "%d channels, %d orbitals, %d bunches, %d rows" % (trxas.c_max-trxas.c_min+1, trxas.o_max-trxas.o_min+1, trxas.b_max-trxas.b_min+1, trxas.num_rows)
+    G.lbl_file_in_info.config(text=msg)
+
+subcode: on_file_in    
+    $if RE.match(r'(.*)/', G.file_in)
+        G.folder_in = RE.m.group(1)
+    check_file(G.file_in)
+    $if G.folder_in
+        check_folder(G.folder_in)
+
+subcode: on_folder_in
+    check_folder(G.folder_in)
+    $if G.name
+        check_file(G.file_in)
+
+subcode: on_folder_out
+    G.lbl_folder_out.config(text=shortname(G.folder_out))
+    G.btn_folder_out.config(text = "Change Output Folder")
+
+subcode: on_trigger
+    msgbox.showinfo(message = "trigger: %s" % G.trigger)
+
+fncode: shortname(str)
+    $if len(str) > 20
+        return "..." + str[-20:]
+    $else
+        return str
+
