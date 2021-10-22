@@ -1,0 +1,85 @@
+subcode: frm_Average
+    &call frame, relief='groove', borderwidth=2
+        G.frm_Average = $(frm)
+
+        &call row, 1
+            $call input_file, file_avg, Check Data File
+
+        &call row, 1
+            $call input_folder, folder_avg, Select Input Folder To Average
+
+        &call row, 1
+            $call input_entry, avg_range, File index range (min - max)
+            $list command_avg
+            $call pack, btn, Button, text="Run Average", command=command_avg
+
+        &call row, 1
+            $call input_entry, plot_col, Plot Column
+            $call set_entry, G.entry_plot_col, "0"
+            $list command_plot
+            $call pack, btn, Button, text="Plot", command=command_plot
+        G.plt = None
+
+subcode: on_file_avg    
+    $import os.path
+    G.opts['folder_avg'] = os.path.dirname(G.opts['file_avg'])
+    $call on_folder_avg
+
+    G.lbl_file_avg.config(text=shortname(G.opts['file_avg']))
+
+subcode: on_folder_avg
+    G.lbl_folder_avg.config(text=shortname(G.opts['folder_avg']))
+    G.btn_folder_avg.config(text = "Change Output Folder")
+    str_range = load_txt_range(G.opts['folder_avg'])
+    $call set_entry, G.entry_avg_range, str_range
+
+#---------------------------------------- 
+fncode: command_avg
+    G.opts['avg_range'] = G.entry_avg_range.get()
+    $if RE.match(r'(\d+)-(\d+)', G.opts['avg_range'])
+        idx_min = int(RE.m.group(1))
+        idx_max = int(RE.m.group(2))
+        count, G.avg_file = Extract.average_output(G.opts['folder_avg'], idx_min, idx_max)
+        msgbox("Averaging %d data files -> %s" % (count, G.avg_file))
+
+fncode: command_plot
+    $import numpy as np
+    $import matplotlib
+    $import matplotlib.pyplot as plt
+    $import Figure from matplotlib.figure
+    $import FigureCanvasTkAgg from matplotlib.backends.backend_tkagg
+    matplotlib.use("TkAgg")
+
+    def get_col():
+        col = G.entry_plot_col.get()
+        $if RE.match(r'b(\d+)-diff', col)
+            return int(RE.m.group(1)) * 2 + 2
+        $elif RE.match(r'b(\d+)$', col)
+            return int(RE.m.group(1)) * 2 + 1
+        $else
+            return 0
+
+    col = int(G.entry_plot_col.get()) * 2 + 1
+    $if col > 0
+        t = np.loadtxt(G.avg_file, skiprows=1)
+        $call check_plot
+        G.plt.clear()
+        G.plt.plot(t[:,0], t[:,col], color='tab:blue') 
+        G.plt2.clear()
+        G.plt2.plot(t[:,0], t[:,col+1], color='tab:red') 
+        G.canvas.draw()
+    
+    subcode: check_plot
+        $if not G.plt
+            figure = Figure(figsize=(5,3), dpi=100)
+            G.plt = figure.add_subplot(1, 1, 1)
+            G.plt2 = G.plt.twinx()
+
+            G.plt.set_xlabel('Energy')
+            G.plt.set_ylabel('raw', color='tab:blue')
+            G.plt2.set_ylabel('diff', color='tab:red')
+
+            G.canvas = FigureCanvasTkAgg(figure, G.frm_Average)
+            G.canvas.get_tk_widget().pack()
+
+#---------------------------------------- 
