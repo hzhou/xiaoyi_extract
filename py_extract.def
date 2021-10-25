@@ -15,9 +15,11 @@ page: trxas_extract
     t.read("data/monomer-00029")
     t.normalize()
     print("  %s cols, %s rows" % (t.num_cols, t.num_rows))
-    # t.process_perbunch('data/t.out', 29, 4, 2, 4)
-    # t.process_avgbunch('data/t.out', 229, 4, 2, 4)
-    print(Extract.average_output("data", 156, 156))
+    $(if:1)
+        # t.process_perbunch('data/t.out', 29, 4, 2, 4)
+        t.process_avgbunch('data/t.out', 229, 4, 2, 4)
+    $(else)
+        print(Extract.average_output("data", 156, 156))
 
 subcode: _autoload
     $call class_RE
@@ -102,7 +104,7 @@ subcode: process_trxas
     np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
 
     subcode: calc_background(pre_n_avg) # row_in
-        back1, back2, back12 = [], [], []
+        back12 = []
 
         $for i=0:self.o_jump # each bunch
             (t1, t2, t12) = (0, 0, 0)
@@ -111,11 +113,9 @@ subcode: process_trxas
                 $call acc_t12, i0 - (j+1) * self.o_jump
             $call avg_t12, $(pre_n_avg)
 
-            $(for:1,2,12)
-                back$1.append(t$1)
+            back12.append(t12)
         $(if:mode=avgbunch)
-            $(for:1,2,12)
-                back$1_avg = np.mean(back$1)
+            back12_avg = np.mean(back12)
         
     subcode: out_line_b_diff(aft_n_avg)
         $for j=0:n_pnt
@@ -185,8 +185,8 @@ subcode: read_trxas # file
         self.cols = header.split()
         self.idxs = {}
         $(for:c,o,b)
-            $1_min = 999
-            $1_max = 0
+            self.$1_min = 999
+            self.$1_max = 0
 
         $foreach i, col in self.cols
             $call update_col_cob
@@ -194,21 +194,21 @@ subcode: read_trxas # file
 
         # o_jump = num_bunches, c_jump = num_bunches * num_orbitals - missing_bunches_in the last orbital
         self.c_jump = self.idxs['c1o0b0'] - self.idxs['c0o0b0']
-        self.o_jump = b_max+1
-        self.num_channel = c_max + 1
-        self.num_bunches = b_max + 1
-        self.num_orbital = o_max  # omitting the last incomplete orbit
+        self.o_jump = self.b_max+1
+        self.num_channel = self.c_max + 1
+        self.num_bunches = self.b_max + 1
+        self.num_orbital = self.o_max  # omitting the last incomplete orbit
 
         subcode: update_col_cob
             $if RE.match(r'c(\d+)o(\d+)b(\d+)', col)
                 $(for:c,o,b and 1,2,3)
-                    $1_max = max($1_max, int(RE.m.group($2)))
-                    $1_min = min($1_min, int(RE.m.group($2)))
+                    self.$1_max = max(self.$1_max, int(RE.m.group($2)))
+                    self.$1_min = min(self.$1_min, int(RE.m.group($2)))
 
     subcode: check_header
         $(for:c,o,b)
-            $call assert, $1_min==0
-        $call assert, c_max>=2
+            $call assert, self.$1_min==0
+        $call assert, self.c_max>=2
         $call assert, self.idxs['c0o0b0']
         $call assert, self.idxs['c1o0b0']
 

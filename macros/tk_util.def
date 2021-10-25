@@ -9,10 +9,10 @@ fncode: init_default
         $if '$1' in G.opts
             $call set_entry, G.entry_$1, G.opts["$1"]
 
-    $if G.opts['folder_in']
+    $if G.opts['folder_in'] and os.path.exists(G.opts['folder_in'])
         $call on_folder_in
 
-    $if G.opts['folder_out']
+    $if G.opts['folder_out'] and os.path.exists(G.opts['folder_out'])
         $call on_folder_out
 
 fncode: save_opts
