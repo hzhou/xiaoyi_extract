@@ -20,6 +20,8 @@ subcode: _autoload
     class G:
         opts = {}
 
+    G.file_type=""
+
 subcode: input_file(name, btn_text)
     $call input_fd, file, $(name), $(btn_text)
 subcode: input_folder(name, btn_text)
@@ -78,7 +80,8 @@ subcode: pack(var, widget, @attr)
         $(var) = tk.$(widget)($(frm), $(attr))
     $(else)
         $(var) = tk.$(widget)($(frm))
-    $(var).pack($(pack_attr))
+    $(if:!_skip_pack)
+        $(var).pack($(pack_attr))
 
 #---------------------------------------- 
 macros:

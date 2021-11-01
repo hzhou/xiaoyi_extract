@@ -14,17 +14,34 @@ subcode: frm_Process
             $call input_select, gs_method, Ground State Method\n, 'per bunch GS', 'avg bunch GS'
         &call row, 20
             $call input_entry, pre_n_avg, Number of orbitals\nfor GS
-            $call input_entry, aft_n_avg, Number of bunches\nto compress
-            $call input_entry, aft_npnt, Number of points\nto output
+            &call col, 2
+                G.subfrm_a = None
+                &call frame
+                    G.subfrm_Energy = $(frm)
+                    $call input_entry, aft_n_avg, Number of bunches\nto compress
+                    $call input_entry, aft_npnt, Number of points\nto output
+                &call frame
+                    G.subfrm_laser_d = $(frm)
+                    $call input_entry, num_bunch, Number of bunches\nto output
 
         &call row, 10
             $list command_run
             $call pack, btn, Button, text="Run", command=command_run
 
+#---------------------------------------- 
+subcode: show_subfrm_a(type)
+    $if G.subfrm_a
+        G.subfrm_a.pack_forget()
+    G.subfrm_a = G.subfrm_$(type)
+    G.subfrm_a.pack(side=tk.LEFT)
+
+#---------------------------------------- 
+
 subcode: on_file_in    
-    G.opts['folder_in'] = os.pack.dirname(G.opts['file_in'])
-    check_folder(G.opts['folder_in'])
-    check_file(G.opts['file_in'])
+    $if G.opts['file_in'] and os.path.exists(G.opts['file_in'])
+        G.opts['folder_in'] = os.path.dirname(G.opts['file_in'])
+        check_folder(G.opts['folder_in'])
+        check_file(G.opts['file_in'])
 
 subcode: on_folder_in
     check_folder(G.opts['folder_in'])
@@ -37,7 +54,7 @@ subcode: on_folder_out
 
 #---------------------------------------- 
 fncode: command_run
-    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt)
+    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch)
         G.$1 = G.entry_$1.get()
         G.opts['$1'] = G.$1
     $(for:gs_method)
@@ -62,14 +79,22 @@ fncode: command_run
         trxas = Extract()
         $if trxas.read(file_in)
             trxas.normalize()
-            $if G.gs_method == 'avg bunch GS'
-                trxas.process_avgbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
-            $else
-                trxas.process_perbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
-
+            $if G.file_type == "Energy"
+                $call run_Energy
+            $elif G.file_type == "laser_d"
+                $call run_laser_d
         count++
     msgbox("Processed %d data files in %s\n" % (count, G.opts['folder_out']))
     
+    subcode: run_Energy
+        $if G.gs_method == 'avg bunch GS'
+            trxas.process_avgbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+        $else
+            trxas.process_perbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+
+    subcode: run_laser_d
+        trxas.process_laser_d(file_out, int(G.trigger), int(G.pre_n_avg), int(G.num_bunch))
+
 #---------------------------------------- 
 fncode: check_folder(folder)
     load_files(folder)
@@ -85,3 +110,10 @@ fncode: check_file(file)
     trxas.read(file)
     msg = "%d channels, %d orbitals, %d bunches, %d rows" % (trxas.c_max-trxas.c_min+1, trxas.o_max-trxas.o_min+1, trxas.b_max-trxas.b_min+1, trxas.num_rows)
     G.lbl_file_in_info.config(text=msg)
+
+    $if trxas.type != G.file_type
+        G.file_type = trxas.type
+        $if G.file_type == "Energy"
+            $call show_subfrm_a, Energy
+        $else
+            $call show_subfrm_a, laser_d
