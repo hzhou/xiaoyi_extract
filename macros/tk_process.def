@@ -79,9 +79,9 @@ fncode: command_run
         trxas = Extract()
         $if trxas.read(file_in)
             trxas.normalize()
-            $if G.file_type == "Energy"
+            $if G.file_type == "Energy" and trxas.type == "Energy"
                 $call run_Energy
-            $elif G.file_type == "laser_d"
+            $elif G.file_type == "laser_d" and trxas.type == "laser_d"
                 $call run_laser_d
         count++
     msgbox("Processed %d data files in %s\n" % (count, G.opts['folder_out']))
