@@ -84,7 +84,7 @@ subcode: process_trxas(type)
             $call avg_t12
             $call get_diff
             i2 = i_row + j * self.num_rows
-            data_out[i2, 0] = row_in[i_d] - j * 153437.86
+            data_out[i2, 0] = -(row_in[i_d] - j * 153437.86)
             data_out[i2, 1] = diff
             
     #------------------
