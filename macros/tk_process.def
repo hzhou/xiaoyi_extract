@@ -83,7 +83,7 @@ fncode: command_run
         trxas = Extract()
         $if trxas.read(file_in)
             $if G.opts['do_poission']
-                trxas.normalize(G.opts['rep_rate'])
+                trxas.normalize(float(G.opts['rep_rate']))
             $else
                 trxas.normalize()
             $if G.file_type == "Energy" and trxas.type == "Energy"
