@@ -80,7 +80,8 @@ subcode: process_trxas(type)
         $(set:aft_n_avg=1)
         i_d = self.idxs['laser_d']
         i0 = self.idxs['c0o0b0'] + trig
-        $(if:1)
+        $if 1
+            j = 0
             $call get_t12, i0
             $call avg_t12
             $call get_diff
