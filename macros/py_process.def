@@ -93,8 +93,8 @@ subcode: process_trxas(type)
             $call get_diff
             t = -(row_in[i_d] - j * 153437.86)
             i2 = self.num_rows + (j - 1)
-            data_out[i2, 0] += t / (n_bunch - 1)
-            data_out[i2, 1] += diff / (n_bunch - 1)
+            data_out[i2, 0] += t / self.num_rows
+            data_out[i2, 1] += diff / self.num_rows
             
     #------------------
     subcode: get_t12(i)
