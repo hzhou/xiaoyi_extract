@@ -26,6 +26,7 @@ subcode: frm_Process
                 &call frame
                     G.subfrm_laser_d = $(frm)
                     $call input_entry, num_bunch, Number of bunches\nto output
+                    $call input_entry, n_pre_bunch, First num bunches\nnot to compress
 
         &call row, 10
             $list command_run
@@ -100,7 +101,7 @@ fncode: command_run
             trxas.process_perbunch(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['aft_n_avg']), int(G.opts['aft_npnt']))
 
     subcode: run_laser_d
-        trxas.process_laser_d(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']))
+        trxas.process_laser_d(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']), int(G.opts['n_pre_bunch']))
 
 #---------------------------------------- 
 fncode: check_folder(folder)

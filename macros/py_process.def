@@ -31,7 +31,7 @@ subcode: process_trxas(type)
     subcode: process_trxas_laser_d
         header_cols.append("diff")
         # N = self.num_rows * n_bunch
-        N = self.num_rows + n_bunch - 1
+        N = self.num_rows * n_pre_bunch + n_bunch - n_pre_bunch
         data_out = np.empty([N, len(header_cols)])
 
 
@@ -80,22 +80,22 @@ subcode: process_trxas(type)
         $(set:aft_n_avg=1)
         i_d = self.idxs['laser_d']
         i0 = self.idxs['c0o0b0'] + trig
-        $if 1
-            j = 0
-            $call get_t12, i0
-            $call avg_t12
-            $call get_diff
-            i2 = i_row
-            data_out[i2, 0] = -row_in[i_d]
-            data_out[i2, 1] = diff
-        $if i_row == self.num_rows - 1
-            continue
-        $for j=1:n_bunch
+        $for j=0:n_pre_bunch
             $call get_t12, i0+j
             $call avg_t12
             $call get_diff
             t = -(row_in[i_d] - j * 153437.86)
-            i2 = self.num_rows + (j - 1)
+            i2 = self.num_rows * j + i_row
+            data_out[i2, 0] = t
+            data_out[i2, 1] = diff
+        $if i_row == self.num_rows - 1
+            continue
+        $for j=n_pre_bunch:n_bunch
+            $call get_t12, i0+j
+            $call avg_t12
+            $call get_diff
+            t = -(row_in[i_d] - j * 153437.86)
+            i2 = self.num_rows * n_pre_bunch + (j - n_pre_bunch)
             data_out[i2, 0] += t / (self.num_rows - 1)
             data_out[i2, 1] += diff / (self.num_rows - 1)
             

@@ -1,5 +1,5 @@
 macros:
-    entry_list: trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch, rep_rate
+    entry_list: trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch, rep_rate, n_pre_bunch
     choice_list: do_poission, gs_method
 
 fncode: init_default
@@ -40,6 +40,8 @@ fncode: load_opts
             for l in In:
                 $if RE.match(r'(\w+):\s*(.*)', l)
                     G.opts[RE.m.group(1)] = RE.m.group(2)
+    $if 'n_pre_bunch' not in G.opts
+        G.opts['n_pre_bunch'] = 1
 
 fncode: load_txt_range(folder)
     $import os, os.path

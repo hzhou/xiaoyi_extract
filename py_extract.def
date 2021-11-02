@@ -25,7 +25,7 @@ page: trxas_extract
         t.process_avgbunch('data/t1.out', 289, 4, 5, 4)
     $(elif:1)
         # trig, pre-n, n-bunch
-        t.process_laser_d('data/t2.out', 289, 4, 4) 
+        t.process_laser_d('data/t2.out', 289, 4, 4, 2) 
     $(else)
         print(Extract.average_output("data", 156, 156))
 
@@ -89,7 +89,7 @@ subcode: _autoload
             $(set:mode=avgbunch)
             $call process_trxas, Energy
 
-        def process_laser_d(self, fileout, trig, pre_n_avg, n_bunch):
+        def process_laser_d(self, fileout, trig, pre_n_avg, n_bunch, n_pre_bunch=1):
             $(set:mode=perbunch)
             $call process_trxas, laser_d
 
