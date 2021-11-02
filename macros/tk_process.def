@@ -8,11 +8,14 @@ subcode: frm_Process
         &call row, 5
             $call input_folder, folder_out, Select Output Folder
 
-        &call row, 20
+        &call row, 10
+            $call checkbox, do_poission, Apply Poisson Correction
+            $call input_entry, rep_rate, Laser Rep-Rate
+        &call row, 10
             $call input_entry, trigger, Sync bunch number
             $call input_entry, range, File index range\n(min - max)
             $call input_select, gs_method, Ground State Method\n, 'per bunch GS', 'avg bunch GS'
-        &call row, 20
+        &call row, 10
             $call input_entry, pre_n_avg, Number of orbitals\nfor GS
             &call col, 2
                 G.subfrm_a = None
@@ -54,14 +57,15 @@ subcode: on_folder_out
 
 #---------------------------------------- 
 fncode: command_run
-    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch)
-        G.$1 = G.entry_$1.get()
-        G.opts['$1'] = G.$1
-    $(for:gs_method)
-        G.opts['$1'] = G.$1
+    load_form()
     save_opts()
 
-    $if RE.match(r'(\d+)-(\d+)', G.range)
+    $(if:0)
+        # debug
+        $dump G.opts['do_poission'], G.opts['gs_method']
+        return
+
+    $if RE.match(r'(\d+)-(\d+)', G.opts['range'])
         G.idx_min = int(RE.m.group(1))
         G.idx_max = int(RE.m.group(2))
 
@@ -78,7 +82,10 @@ fncode: command_run
 
         trxas = Extract()
         $if trxas.read(file_in)
-            trxas.normalize()
+            $if G.opts['do_poission']
+                trxas.normalize(G.opts['rep_rate'])
+            $else
+                trxas.normalize()
             $if G.file_type == "Energy" and trxas.type == "Energy"
                 $call run_Energy
             $elif G.file_type == "laser_d" and trxas.type == "laser_d"

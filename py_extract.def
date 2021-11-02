@@ -17,7 +17,7 @@ page: trxas_extract
     # t.read("data/monomer-00029")
     # t.read("data/1FeMIL125_SPC_mode-00118")
     t.read("data/1FeMIL125b_SPC_mode-00509")
-    t.normalize()
+    t.normalize(13000)
     print("  %s cols, %s rows, %s bunch" % (t.num_cols, t.num_rows, t.o_jump))
     $(if:0)
         # trig, pre-n, aft-n, n-output
@@ -79,7 +79,7 @@ subcode: _autoload
             $call read_trxas
             return True
 
-        def normalize(self):
+        def normalize(self, max_count=0):
             $call normalize
 
         def process_perbunch(self, fileout, trig, pre_n_avg, aft_n_avg, n_pnt):

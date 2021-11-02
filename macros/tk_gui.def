@@ -45,8 +45,13 @@ subcode: input_fd(type, name, btn_text)
         $call pack, G.lbl_$(name), Label, text=G.opts['$(name)']
         $call pack, G.lbl_$(name)_info, Label, text=""
 
+subcode: checkbox(name, title)
+    G.choice_$(name) = tk.IntVar()
+
+    &call col, 20
+        $call pack, tmp_checkbox, Checkbutton, variable=G.choice_$(name), text="$(title)"
+
 subcode: input_entry(name, title)
-    G.$(name) = ""
     G.entry_$(name) = None
     G.lbl_$(name) = None
 
@@ -57,22 +62,20 @@ subcode: input_entry(name, title)
 
 subcode: input_select(name, title, @choices)
     choices = [$(choices)]
-    G.opt_$(name) = tk.StringVar($(frm))
-    G.opt_$(name).set(choices[0])
-    G.$(name) = choices[0]
-
-    def command_$(name)(*args):
-        G.$(name) = G.opt_$(name).get()
-        $call @on_$(name)
+    G.choice_$(name) = tk.StringVar($(frm))
+    G.choice_$(name).set(choices[0])
 
     &call col, 20, width=40
         $call pack, G.lbl_$(name), Label, text="$(title)"
-        $call pack, tmp_select, OptionMenu, G.opt_$(name), *choices, command=command_$(name)
+        $call pack, tmp_select, OptionMenu, G.choice_$(name), *choices
         $call hskip, 20
 
 subcode: set_entry(var, text)
     $(var).delete(0, tk.END)
     $(var).insert(0, $(text))
+
+subcode: set_choice(var, val)
+    $(var).set($(val))
 
 #---------------------------------------- 
 subcode: pack(var, widget, @attr)

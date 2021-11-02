@@ -1,13 +1,24 @@
+macros:
+    entry_list: trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch, rep_rate
+    choice_list: do_poission, gs_method
+
 fncode: init_default
-    $import os.path
-    $if os.path.exists("config")
-        with open("config") as In:
-            for l in In:
-                $if RE.match(r'(\w+):\s*(.*)', l)
-                    G.opts[RE.m.group(1)] = RE.m.group(2)
-    $(for:trigger, range, pre_n_avg, aft_n_avg, aft_npnt)
+    load_opts()
+    $call set_form
+
+fncode: load_form
+    $(for:$(entry_list))
+        G.opts['$1'] = G.entry_$1.get()
+    $(for:$(choice_list))
+        G.opts['$1'] = G.choice_$1.get()
+
+fncode: set_form
+    $(for:$(entry_list))
         $if '$1' in G.opts
             $call set_entry, G.entry_$1, G.opts["$1"]
+    $(for:$(choice_list))
+        $if '$1' in G.opts
+            $call set_choice, G.choice_$1, G.opts["$1"]
 
     $if G.opts['folder_in'] and os.path.exists(G.opts['folder_in'])
         $call on_folder_in
@@ -15,11 +26,20 @@ fncode: init_default
     $if G.opts['folder_out'] and os.path.exists(G.opts['folder_out'])
         $call on_folder_out
 
+#---------------------------------------- 
 fncode: save_opts
     f = open("config", "w")
     for k in G.opts:
         f.write("%s: %s\n" % (k, G.opts[k]))
     f.close()
+
+fncode: load_opts
+    $import os.path
+    $if os.path.exists("config")
+        with open("config") as In:
+            for l in In:
+                $if RE.match(r'(\w+):\s*(.*)', l)
+                    G.opts[RE.m.group(1)] = RE.m.group(2)
 
 fncode: load_txt_range(folder)
     $import os, os.path
