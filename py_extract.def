@@ -25,7 +25,7 @@ page: trxas_extract
         t.process_avgbunch('data/t1.out', 289, 4, 5, 4)
     $(elif:1)
         # trig, pre-n, n-bunch
-        t.process_laser_d('data/t2.out', 289, 4, 4, 2) 
+        t.process_laser_d('data/t2.out', 289, 4, 100, 2) 
     $(else)
         print(Extract.average_output("data", 156, 156))
 
