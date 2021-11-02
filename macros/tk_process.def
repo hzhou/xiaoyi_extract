@@ -95,12 +95,12 @@ fncode: command_run
     
     subcode: run_Energy
         $if G.gs_method == 'avg bunch GS'
-            trxas.process_avgbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+            trxas.process_avgbunch(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['aft_n_avg']), int(G.opts['aft_npnt']))
         $else
-            trxas.process_perbunch(file_out, int(G.trigger), int(G.pre_n_avg), int(G.aft_n_avg), int(G.aft_npnt))
+            trxas.process_perbunch(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['aft_n_avg']), int(G.opts['aft_npnt']))
 
     subcode: run_laser_d
-        trxas.process_laser_d(file_out, int(G.trigger), int(G.pre_n_avg), int(G.num_bunch))
+        trxas.process_laser_d(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']))
 
 #---------------------------------------- 
 fncode: check_folder(folder)
