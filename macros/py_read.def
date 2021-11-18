@@ -69,6 +69,8 @@ subcode: read_trxas # file
                 return False
 
 subcode: normalize
+    $(for:0,1,2)
+        i$1 = self.idxs['c$1o0b0']
     $if max_count > 0
         $for i=0:self.num_rows
             $call poisson_correction
@@ -78,7 +80,6 @@ subcode: normalize
     self.normalized = True
 
     subcode: get_c0_avgs
-        i0 = self.idxs['c0o0b0']
         avgs = []
         $for j=0:self.num_bunches
             sum = 0.0
@@ -88,13 +89,12 @@ subcode: normalize
 
     subcode: per_bunch_normalize
         # -- normalize per bunch
-        i0 = self.idxs['c1o0b0']
-        $for j=i0:self.num_cols
-            self.data[i, j] /= avgs[j % self.num_bunches]
+        $for j=0:self.num_bunches * self.num_orbital
+            self.data[i, i1 + j] /= avgs[j % self.num_bunches]
+            self.data[i, i2 + j] /= avgs[j % self.num_bunches]
 
     subcode: poisson_correction
         $import math
-        i0 = self.idxs['c0o0b0']
         i_sec = self.idxs['Seconds']
         $for j=i0:self.num_cols
             # P(0) = e^(-n) --> n = -ln(P(0))
