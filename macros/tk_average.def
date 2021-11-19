@@ -64,9 +64,18 @@ fncode: command_plot
         t = np.loadtxt(G.avg_file, skiprows=1)
         $call check_plot
         $if t.shape[1] == 2
+            G.plt.set_xlabel('Laser Delay')
+            G.plt.set_ylabel('diff', color='tab:blue')
+            G.plt2.set_axis_off()
+
             G.plt.clear()
             G.plt.plot(t[:,0], t[:,1], color='tab:blue') 
         $else
+            G.plt.set_xlabel('Energy')
+            G.plt.set_ylabel('raw', color='tab:blue')
+            G.plt2.set_axis_on()
+            G.plt2.set_ylabel('diff', color='tab:red')
+
             G.plt.clear()
             G.plt.plot(t[:,0], t[:,col], color='tab:blue') 
             G.plt2.clear()
@@ -78,10 +87,6 @@ fncode: command_plot
             figure = Figure(figsize=(5,3), dpi=100)
             G.plt = figure.add_subplot(1, 1, 1)
             G.plt2 = G.plt.twinx()
-
-            G.plt.set_xlabel('Energy')
-            G.plt.set_ylabel('raw', color='tab:blue')
-            G.plt2.set_ylabel('diff', color='tab:red')
 
             G.canvas = FigureCanvasTkAgg(figure, G.frm_Average)
             G.canvas.get_tk_widget().pack()
