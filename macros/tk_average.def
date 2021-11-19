@@ -63,10 +63,14 @@ fncode: command_plot
     $if col > 0
         t = np.loadtxt(G.avg_file, skiprows=1)
         $call check_plot
-        G.plt.clear()
-        G.plt.plot(t[:,0], t[:,col], color='tab:blue') 
-        G.plt2.clear()
-        G.plt2.plot(t[:,0], t[:,col+1], color='tab:red') 
+        $if t.shape[1] == 2
+            G.plt.clear()
+            G.plt.plot(t[:,0], t[:,1], color='tab:blue') 
+        $else
+            G.plt.clear()
+            G.plt.plot(t[:,0], t[:,col], color='tab:blue') 
+            G.plt2.clear()
+            G.plt2.plot(t[:,0], t[:,col+1], color='tab:red') 
         G.canvas.draw()
     
     subcode: check_plot
