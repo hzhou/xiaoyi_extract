@@ -8,7 +8,9 @@ subcode: process_trxas(type)
 
     $call process_trxas_$(type)
 
-    np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
+    self.data_out = data_out
+    $if fileout:
+        np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
 
     #---------------------------------------- 
     subcode: process_trxas_Energy
@@ -51,9 +53,10 @@ subcode: process_trxas(type)
             $call avg_t12, $(pre_n_avg)
 
             back12.append(t12)
-        $(if:mode=avgbunch)
+
+        $if not do_perbunch
+            # avgbunch
             back12_avg = np.mean(back12)
-            # print("avg:%.4f - %s" % (back12_avg, repr(back12)))
         
     #----
     subcode: out_line_b_diff(aft_n_avg)
@@ -116,8 +119,8 @@ subcode: process_trxas(type)
         t12=(t1+t2)/2
 
     subcode: get_diff(b_idx)
-        $(if:mode=perbunch)
+        $if do_perbunch
             diff = t12 - back12[$(b_idx)]
-        $(elif:mode=avgbunch)
+        $else
             diff = t12 - back12_avg
 
