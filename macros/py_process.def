@@ -90,8 +90,6 @@ subcode: process_trxas(type)
             i2 = self.num_rows * j + i_row
             data_out[i2, 0] = t
             data_out[i2, 1] = diff
-        $if i_row == self.num_rows - 1
-            continue
         $for j=n_pre_bunch:n_bunch
             $call get_t12, i0+j
             $call avg_t12
@@ -99,11 +97,11 @@ subcode: process_trxas(type)
             t = -(row_in[i_d] - j * 153437.86)
             i2 = self.num_rows * n_pre_bunch + (j - n_pre_bunch)
             $if i_row == 0
-                data_out[i2, 0] = t / (self.num_rows - 1)
-                data_out[i2, 1] = diff / (self.num_rows - 1)
+                data_out[i2, 0] = t / self.num_rows
+                data_out[i2, 1] = diff / self.num_rows
             $else
-                data_out[i2, 0] += t / (self.num_rows - 1)
-                data_out[i2, 1] += diff / (self.num_rows - 1)
+                data_out[i2, 0] += t / self.num_rows
+                data_out[i2, 1] += diff / self.num_rows
             
     #------------------
     subcode: get_t12(i)
