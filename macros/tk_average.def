@@ -18,6 +18,9 @@ subcode: frm_Average
             $call set_entry, G.entry_plot_col, "0"
             $list command_plot
             $call pack, btn, Button, text="Plot", command=command_plot
+
+        &call row, 1
+            G.frm_Plot = $(frm)
         G.plt = None
 
 subcode: on_file_avg    
@@ -88,7 +91,7 @@ fncode: command_plot
             G.plt = figure.add_subplot(1, 1, 1)
             G.plt2 = G.plt.twinx()
 
-            G.canvas = FigureCanvasTkAgg(figure, G.frm_Average)
+            G.canvas = FigureCanvasTkAgg(figure, G.frm_Plot)
             G.canvas.get_tk_widget().pack()
 
 #---------------------------------------- 
