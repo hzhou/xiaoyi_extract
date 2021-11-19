@@ -6,7 +6,7 @@ subcode: tk_main(size)
     window = tk.Tk()
     $(if:title)
         window.title("$(title)")
-    window.resizable(False, False)
+    window.resizable(True, True)
     window.geometry('$(size)')
     BLOCK
     window.mainloop()
