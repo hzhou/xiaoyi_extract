@@ -9,7 +9,7 @@ subcode: process_trxas(type)
     $call process_trxas_$(type)
 
     self.data_out = data_out
-    $if fileout:
+    $if fileout
         np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
 
     #---------------------------------------- 
