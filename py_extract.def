@@ -1,0 +1,90 @@
+#L N  Epoch  Energy k ... c0o0b0  c0o0b1  c0o1b0 ... c1o0b0 c1o0b1  c1o1b0 ...
+# c - channel / detector 3
+# o - orbital
+# b - bunch  n bunch / orbit
+# trigger - bunch # since c*o0b0
+
+include: macros/py_process.def
+include: macros/py_read.def
+
+page: trxas_extract
+    module: python
+    # output_dir: /home/hzhou/projects/jupyter
+    $import numpy as np
+    $import re
+    t = Extract()
+    # t.read("data/sample3-00156")
+    # t.read("data/monomer-00029")
+    # t.read("data/1FeMIL125_SPC_mode-00118")
+    t.read("data/1FeMIL125b_SPC_mode-00509")
+    t.normalize(13000)
+    print("  %s cols, %s rows, %s bunch" % (t.num_cols, t.num_rows, t.o_jump))
+    $(if:0)
+        # trig, pre-n, aft-n, n-output
+        t.process_energy('data/t0.out', 289, 4, 5, 4, True)
+        t.process_energy('data/t1.out', 289, 4, 5, 4, False)
+    $(elif:1)
+        # trig, pre-n, n-bunch
+        t.process_laser_d('data/t2.out', 289, 4, 100, 2, True) 
+    $(else)
+        print(Extract.average_output("data", 156, 156))
+
+subcode: _autoload
+    $call class_RE
+    class Extract:
+        # -- class methods --
+        def is_sample_data(file):
+            f = open(file, 'r')
+            line = f.readline()
+            $if re.match(r'#F \S+$', line)
+                return True
+            $else
+                return False
+
+        def average_output(folder, idx_min, idx_max):
+            def get_header(file):
+                f = open(file, 'r')
+                header = f.readline()
+                f.close()
+                return header.rstrip()
+
+            $import os, os.path
+            header_line = None
+            data = []
+            $for filename in os.listdir(folder)
+                $if filename.startswith('avg')
+                    continue
+                m = re.match(r'.*-(\d+)\.txt$', filename)
+                $if m and int(m.group(1)) >= idx_min and int(m.group(1)) <= idx_max
+                    file = os.path.join(folder, filename)
+                    $if not header_line
+                        header_line = get_header(file)
+                    data.append(np.loadtxt(file, skiprows=1))
+            t = np.mean(data, axis=0)
+            file_out = os.path.join(folder, "avg-%d-%d.txt" % (idx_min, idx_max))
+            np.savetxt(file_out, t, header=header_line, fmt='%.6f', comments='')
+
+            return (len(data), file_out)
+            return "Averaging %d data files -> %s" % (len(data), file_out)
+
+        # -- instance methods --
+        #    data, num_rows, num_cols
+        #    cols (column header)
+        #    idxs (column index)
+        #    c_jump, o_jump, num_bunches, num_orbital, num_channel
+        #    normalized
+
+        def read(self, file):
+            print("reading %s ..." % file)
+            $call read_trxas
+            return True
+
+        def normalize(self, max_count=0):
+            $call normalize
+
+        def process_energy(self, fileout, trig, pre_n_avg, aft_n_avg, n_pnt, do_perbunch=True):
+            $call process_trxas, Energy
+
+        def process_laser_d(self, fileout, trig, pre_n_avg, n_bunch, n_pre_bunch=1, do_perbunch=True):
+            $call process_trxas, laser_d
+

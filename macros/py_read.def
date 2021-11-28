@@ -1,0 +1,102 @@
+# read_trxas, normalize
+
+# The columns are cols[n_c][n_o][n_b],
+# thus o_jump is n_b
+# and  c_jump is n_b * n_o - [missing bunches in the last orbital]
+subcode: read_trxas # file
+    self.type = None
+    header = None
+    rows = []
+    with open(file) as f:
+        $for line in f
+            $if line.startswith('#L ')
+                header = line[3:]
+                $if re.match(r'#L .* Energy ', line)
+                    self.type = "Energy"
+                $elif re.match(r'#L .* laser_d ', line)
+                    self.type = "laser_d"
+                $else
+                    print("  file unrecognized: %s, header: %s..." % (file, line[0:20]))
+                    return False
+            $elif re.match(r'\d.*', line) and header
+                rows.append(line)
+    $if not rows
+        print("  file empty")
+        return False
+    $call parse_header
+    $call check_header
+    self.num_cols = len(rows[0].split())
+    self.num_rows = len(rows)
+    self.data = np.empty([self.num_rows, self.num_cols], dtype = np.float64)
+    $for i, l in rows
+        $for j, t in l.split()
+            self.data[i, j] = float(t)
+
+    subcode: parse_header
+        self.cols = header.split()
+        self.idxs = {}
+        $(for:c,o,b)
+            self.$1_min = 999
+            self.$1_max = 0
+
+        $foreach i, col in self.cols
+            $call update_col_cob
+            self.idxs[col] = i    
+
+        # o_jump = num_bunches, c_jump = num_bunches * num_orbitals - missing_bunches_in the last orbital
+        self.c_jump = self.idxs['c1o0b0'] - self.idxs['c0o0b0']
+        self.o_jump = self.b_max+1
+        self.num_channel = self.c_max + 1
+        self.num_bunches = self.b_max + 1
+        self.num_orbital = self.o_max  # omitting the last incomplete orbit
+
+        subcode: update_col_cob
+            $if RE.match(r'c(\d+)o(\d+)b(\d+)', col)
+                $(for:c,o,b and 1,2,3)
+                    self.$1_max = max(self.$1_max, int(RE.m.group($2)))
+                    self.$1_min = min(self.$1_min, int(RE.m.group($2)))
+
+    subcode: check_header
+        $(for:c,o,b)
+            $call assert, self.$1_min==0
+        $call assert, self.c_max>=2
+        $call assert, self.idxs['c0o0b0']
+        $call assert, self.idxs['c1o0b0']
+
+        subcode: assert(cond)
+            $if !($(cond))
+                print(" check failed for file for $(cond) file: %s" % file)
+                return False
+
+subcode: normalize
+    $(for:0,1,2)
+        i$1 = self.idxs['c$1o0b0']
+    $if max_count > 0
+        $for i=0:self.num_rows
+            $call poisson_correction
+    $for i=0:self.num_rows
+        $call get_c0_avgs
+        $call per_bunch_normalize
+    self.normalized = True
+
+    subcode: get_c0_avgs
+        avgs = []
+        $for j=0:self.num_bunches
+            sum = 0.0
+            $for k=0:self.num_orbital
+                sum += self.data[i, i0 + k * self.num_bunches + j]
+            avgs.append(sum / self.num_orbital)
+
+    subcode: per_bunch_normalize
+        # -- normalize per bunch
+        $for j=0:self.num_bunches * self.num_orbital
+            self.data[i, i1 + j] /= avgs[j % self.num_bunches]
+            self.data[i, i2 + j] /= avgs[j % self.num_bunches]
+
+    subcode: poisson_correction
+        $import math
+        i_sec = self.idxs['Seconds']
+        $for j=i0:self.num_cols
+            # P(0) = e^(-n) --> n = -ln(P(0))
+            P1 = self.data[i,j] / (max_count * self.data[i,i_sec])
+            self.data[i,j] = -math.log(1.0 - P1)

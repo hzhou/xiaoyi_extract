@@ -1,0 +1,54 @@
+include: macros/tk_gui.def
+include: macros/tk_util.def
+include: macros/tk_process.def
+include: macros/tk_average.def
+
+page: tk_extract
+    module: python
+    title: XTA MXP data process (TRR Group)
+
+    $call @check_path
+    &call tk_main, 800x600
+        $call content
+
+subcode: check_path
+    $import sys, os, os.path
+    $if not os.path.exists("trxas_extract.py")
+        os.chdir(os.path.dirname(sys.argv[0]))
+    $if not os.path.exists("trxas_extract.py")
+        $print "Missing trxas_extract.py. Run from the script folder."
+
+subcode: content
+    $(if:0)
+        G.title = tk.Label(text="$(title)")
+        G.title.pack()
+
+    $call vskip, 20
+    &call col, 10
+        $list command_Process, command_Average
+        $call pack, btn_A, Button, text="Process", command=command_Process
+        $call vskip, 20
+        $call pack, btn_B, Button, text="Average", command=command_Average
+
+    G.frm_current = None
+    $call frm_Process
+    $call frm_Average
+
+    init_default()
+    command_Process()
+
+fncode: command_Process
+    $if G.frm_current
+        G.frm_current.pack_forget()
+    G.frm_current = G.frm_Process
+    G.frm_current.pack(pady = 5)
+
+fncode: command_Average
+    $if G.frm_current
+        G.frm_current.pack_forget()
+    G.frm_current = G.frm_Average
+    G.frm_current.pack(pady = 5)
+
+#---------------------------------------- 
+subcode: _autoload
+    $import * from trxas_extract

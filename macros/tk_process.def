@@ -1,0 +1,126 @@
+subcode: frm_Process
+    &call frame, relief='groove', borderwidth=2
+        G.frm_Process = $(frm)
+        &call row, 5
+            $call input_file, file_in, Check Data File
+        &call row, 5
+            $call input_folder, folder_in, Select Input Folder
+        &call row, 5
+            $call input_folder, folder_out, Select Output Folder
+
+        &call row, 10
+            $call checkbox, do_poission, Apply Poisson Correction
+            $call input_entry, rep_rate, Laser Rep-Rate
+        &call row, 10
+            $call input_entry, trigger, Sync bunch number
+            $call input_entry, range, File index range\n(min - max)
+            $call input_select, gs_method, Ground State Method\n, 'per bunch GS', 'avg bunch GS'
+        &call row, 10
+            $call input_entry, pre_n_avg, Number of orbitals\nfor GS
+            &call col, 2
+                G.subfrm_a = None
+                &call frame
+                    G.subfrm_Energy = $(frm)
+                    $call input_entry, aft_n_avg, Number of bunches\nto compress
+                    $call input_entry, aft_npnt, Number of points\nto output
+                &call frame
+                    G.subfrm_laser_d = $(frm)
+                    $call input_entry, num_bunch, Number of bunches\nto output
+                    $call input_entry, n_pre_bunch, First num bunches\nnot to compress
+
+        &call row, 10
+            $list command_run
+            $call pack, btn, Button, text="Run", command=command_run
+
+#---------------------------------------- 
+subcode: show_subfrm_a(type)
+    $if G.subfrm_a
+        G.subfrm_a.pack_forget()
+    G.subfrm_a = G.subfrm_$(type)
+    G.subfrm_a.pack(side=tk.LEFT)
+
+#---------------------------------------- 
+
+subcode: on_file_in    
+    $if G.opts['file_in'] and os.path.exists(G.opts['file_in'])
+        G.opts['folder_in'] = os.path.dirname(G.opts['file_in'])
+        check_folder(G.opts['folder_in'])
+        check_file(G.opts['file_in'])
+
+subcode: on_folder_in
+    check_folder(G.opts['folder_in'])
+    $if G.name
+        check_file(G.opts['file_in'])
+
+subcode: on_folder_out
+    G.lbl_folder_out.config(text=shortname(G.opts['folder_out']))
+    G.btn_folder_out.config(text = "Change Output Folder")
+
+#---------------------------------------- 
+fncode: command_run
+    load_form()
+    save_opts()
+
+    $(if:0)
+        # debug
+        $dump G.opts['do_poission'], G.opts['gs_method']
+        return
+
+    $if RE.match(r'(\d+)-(\d+)', G.opts['range'])
+        G.idx_min = int(RE.m.group(1))
+        G.idx_max = int(RE.m.group(2))
+
+    $if not os.path.exists(G.opts['folder_out'])
+        os.makedirs(G.opts['folder_out'])
+
+    count = 0
+    $for file_in in G.files
+        $if RE.match(r'(.*)-(\d+)$', file_in)
+            idx = int(RE.m.group(2))
+            $if idx < G.idx_min or idx > G.idx_max
+                continue
+        file_out = get_file_out(file_in)
+
+        trxas = Extract()
+        $if trxas.read(file_in)
+            $if G.opts['do_poission']
+                trxas.normalize(float(G.opts['rep_rate']))
+            $else
+                trxas.normalize()
+            $if G.file_type == "Energy" and trxas.type == "Energy"
+                $call run_Energy
+            $elif G.file_type == "laser_d" and trxas.type == "laser_d"
+                $call run_laser_d
+        count++
+    msgbox("Processed %d data files in %s\n" % (count, G.opts['folder_out']))
+    
+    subcode: run_Energy
+        do_perbunch = not (G.opts['gs_method'] == 'avg bunch GS')
+        trxas.process_energy(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['aft_n_avg']), int(G.opts['aft_npnt']), do_perbunch)
+
+    subcode: run_laser_d
+        do_perbunch = not (G.opts['gs_method'] == 'avg bunch GS')
+        trxas.process_laser_d(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']), int(G.opts['n_pre_bunch']), do_perbunch)
+
+#---------------------------------------- 
+fncode: check_folder(folder)
+    load_files(folder)
+    $if G.name
+        $call set_entry, G.entry_range, "%s-%s" % (G.idx_min, G.idx_max)
+
+    G.lbl_folder_in.config(text=shortname(folder))
+    G.btn_folder_in.config(text = "Change Input Folder")
+
+fncode: check_file(file)
+    G.lbl_file_in.config(text=shortname(file))
+    trxas = Extract()
+    trxas.read(file)
+    msg = "%d channels, %d orbitals, %d bunches, %d rows" % (trxas.c_max-trxas.c_min+1, trxas.o_max-trxas.o_min+1, trxas.b_max-trxas.b_min+1, trxas.num_rows)
+    G.lbl_file_in_info.config(text=msg)
+
+    $if trxas.type != G.file_type
+        G.file_type = trxas.type
+        $if G.file_type == "Energy"
+            $call show_subfrm_a, Energy
+        $else
+            $call show_subfrm_a, laser_d

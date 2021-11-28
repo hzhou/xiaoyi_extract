@@ -1,0 +1,121 @@
+subcode: tk_main(size)
+    $import tkinter as tk
+    $import tkinter.filedialog as fd
+    $import tkinter.messagebox as msgbox
+
+    window = tk.Tk()
+    $(if:title)
+        window.title("$(title)")
+    window.resizable(True, True)
+    window.geometry('$(size)')
+    BLOCK
+    window.mainloop()
+
+#---------------------------------------- 
+fncode: msgbox(msg)
+    tk.messagebox.showinfo(message=msg)
+
+#---------------------------------------- 
+subcode: _autoload
+    class G:
+        opts = {}
+
+    G.file_type=""
+
+subcode: input_file(name, btn_text)
+    $call input_fd, file, $(name), $(btn_text)
+subcode: input_folder(name, btn_text)
+    $call input_fd, folder, $(name), $(btn_text)
+
+subcode: input_fd(type, name, btn_text)
+    G.opts['$(name)'] = ""
+    G.btn_$(name) = None
+    G.lbl_$(name) = None
+    G.lbl_$(name)_info = None
+
+    def command_$(name)():
+        $(if:type=folder)
+            G.opts['$(name)'] = fd.askdirectory()
+        $(else)
+            G.opts['$(name)'] = fd.askopenfilename()
+        $call @on_$(name)
+
+    &call col, 20, width=30
+        $call pack, G.btn_$(name), Button, text="$(btn_text)", command=command_$(name)
+        $call pack, G.lbl_$(name), Label, text=G.opts['$(name)']
+        $call pack, G.lbl_$(name)_info, Label, text=""
+
+subcode: checkbox(name, title)
+    G.choice_$(name) = tk.IntVar()
+
+    &call col, 20
+        $call pack, tmp_checkbox, Checkbutton, variable=G.choice_$(name), text="$(title)"
+
+subcode: input_entry(name, title)
+    G.entry_$(name) = None
+    G.lbl_$(name) = None
+
+    &call col, 20, width=40
+        $call pack, G.lbl_$(name), Label, text="$(title)"
+        $call pack, G.entry_$(name), Entry, width=15
+        $call hskip, 20
+
+subcode: input_select(name, title, @choices)
+    choices = [$(choices)]
+    G.choice_$(name) = tk.StringVar($(frm))
+    G.choice_$(name).set(choices[0])
+
+    &call col, 20, width=40
+        $call pack, G.lbl_$(name), Label, text="$(title)"
+        $call pack, tmp_select, OptionMenu, G.choice_$(name), *choices
+        $call hskip, 20
+
+subcode: set_entry(var, text)
+    $(var).delete(0, tk.END)
+    $(var).insert(0, $(text))
+
+subcode: set_choice(var, val)
+    $(var).set($(val))
+
+#---------------------------------------- 
+subcode: pack(var, widget, @attr)
+    $(if:attr)
+        $(var) = tk.$(widget)($(frm), $(attr))
+    $(else)
+        $(var) = tk.$(widget)($(frm))
+    $(if:!_skip_pack)
+        $(var).pack($(pack_attr))
+
+#---------------------------------------- 
+macros:
+    frm: window
+    frm_idx: 0
+    pack_attr:
+
+subcode: hskip(w)
+    frm = tk.Frame($(frm), width=$(w))
+    frm.pack(side=tk.LEFT)
+
+subcode: vskip(h)
+    frm = tk.Frame($(frm), height=$(h))
+    frm.pack(side=tk.TOP)
+
+subcode: frame(@attr)
+    $(set:frm0=$(frm))
+    $(eval:frm_idx=$(frm_idx)+1)
+    $(set:frm=frm$(frm_idx))
+    $(if:attr)
+        $(frm) = tk.Frame($(frm0), $(attr))
+    $(else)
+        $(frm) = tk.Frame($(frm0))
+    BLOCK
+
+subcode: row(pady, @attr)
+    &call frame, $(attr)
+        $(frm).pack(side=tk.TOP, pady=$(pady))
+        BLOCK
+
+subcode: col(padx, @attr)
+    &call frame, $(attr)
+        $(frm).pack(side=tk.LEFT, padx=$(padx))
+        BLOCK

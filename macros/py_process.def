@@ -1,0 +1,124 @@
+subcode: process_trxas(type)
+    $if self.type != "$(type)"
+        raise Exception("Expect $(type) scan, but the file is %s scan." % self.type)
+
+    extra_cols = ["$(type)"]  # Energy, laser_d
+    header_cols = []
+    header_cols.extend(extra_cols)
+
+    $call process_trxas_$(type)
+
+    self.data_out = data_out
+    $if fileout
+        np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
+
+    #---------------------------------------- 
+    subcode: process_trxas_Energy
+        $for j=0:n_pnt
+            header_cols.append("b%d" % j)
+            header_cols.append("b%d-diff" % j)
+        data_out = np.empty([self.num_rows, len(header_cols)])
+
+        num_extra = len(extra_cols)
+        $for i, col in extra_cols
+            data_out[:, i] = self.data[:, self.idxs[col]]
+
+        $for i_row=0:self.num_rows
+            row_in = self.data[i_row,:]
+            $call calc_background, pre_n_avg
+
+            row_out = data_out[i_row,num_extra:]
+            $call out_line_b_diff, aft_n_avg
+
+    subcode: process_trxas_laser_d
+        header_cols.append("diff")
+        # N = self.num_rows * n_bunch
+        N = self.num_rows * n_pre_bunch + n_bunch - n_pre_bunch
+        data_out = np.empty([N, len(header_cols)])
+
+        $for i_row=0:self.num_rows
+            row_in = self.data[i_row,:]
+            $call calc_background, pre_n_avg
+            $call out_line_laser_d
+
+
+    subcode: calc_background(pre_n_avg) # row_in
+        back12 = []
+
+        $for i=0:self.o_jump # each bunch
+            (t1, t2, t12) = (0, 0, 0)
+            i0 = self.idxs['c0o0b0'] + trig + i
+            $for j=0:$(pre_n_avg)
+                $call acc_t12, i0 - (j+1) * self.o_jump
+            $call avg_t12, $(pre_n_avg)
+
+            back12.append(t12)
+
+        $if not do_perbunch
+            # avgbunch
+            back12_avg = np.mean(back12)
+        
+    #----
+    subcode: out_line_b_diff(aft_n_avg)
+        $for j=0:n_pnt
+            a12 = 0
+            adiff = 0
+            i0 = self.idxs['c0o0b0'] + trig + j*$(aft_n_avg)
+            $for i=0:$(aft_n_avg)
+                $call get_t12, i0 + i
+                $call avg_t12
+                $call get_diff, (j * $(aft_n_avg) + i) % self.o_jump
+                a12+=t12
+                adiff+=diff
+
+            a12/=$(aft_n_avg)
+            adiff/=$(aft_n_avg)
+
+            row_out[j*2] = a12
+            row_out[j*2 + 1] = adiff
+
+    #----
+    subcode: out_line_laser_d
+        $(set:aft_n_avg=1)
+        i_d = self.idxs['laser_d']
+        i0 = self.idxs['c0o0b0'] + trig
+        $for j=0:n_pre_bunch
+            $call get_t12, i0+j
+            $call avg_t12
+            $call get_diff, j % self.o_jump
+            t = -(row_in[i_d] - j * 153437.86)
+            i2 = self.num_rows * j + i_row
+            data_out[i2, 0] = t
+            data_out[i2, 1] = diff
+        $for j=n_pre_bunch:n_bunch
+            $call get_t12, i0+j
+            $call avg_t12
+            $call get_diff, j % self.o_jump
+            t = -(row_in[i_d] - j * 153437.86)
+            i2 = self.num_rows * n_pre_bunch + (j - n_pre_bunch)
+            $if i_row == 0
+                data_out[i2, 0] = t / self.num_rows
+                data_out[i2, 1] = diff / self.num_rows
+            $else
+                data_out[i2, 0] += t / self.num_rows
+                data_out[i2, 1] += diff / self.num_rows
+            
+    #------------------
+    subcode: get_t12(i)
+        t1=row_in[$(i)+self.c_jump]
+        t2=row_in[$(i)+self.c_jump*2]
+    subcode: acc_t12(i)
+        t1+=row_in[$(i)+self.c_jump]
+        t2+=row_in[$(i)+self.c_jump*2]
+    subcode: avg_t12(@n)
+        $(if:n)
+            t1 /= $(pre_n_avg)
+            t2 /= $(pre_n_avg)
+        t12=(t1+t2)/2
+
+    subcode: get_diff(b_idx)
+        $if do_perbunch
+            diff = t12 - back12[$(b_idx)]
+        $else
+            diff = t12 - back12_avg
+
