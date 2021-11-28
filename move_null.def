@@ -1,0 +1,39 @@
+page: move_null
+    module: perl
+    arg: ../211127/avgIra1s3.txt 11.2 11.7
+
+    my ($file, $e1, $e2) = @ARGV
+
+    my ($n_cols, $n_rows)
+    my @headers
+    my @data
+    my (@avg, $count)
+    &call open_r, $file
+	$if /Energy/
+            @headers=split /\s+/, $_
+            $n_cols = @headers
+	$else
+            my @d = split /\s+/, $_
+	    push @data, \@d
+            $if $d[0]>=$e1 && $d[0]<$e2
+                $for $i=0:$n_cols
+                    $avg[$i] += $d[$i]
+                $count++
+
+    $for $i=0:$n_cols
+        $avg[$i] /= $count
+
+    $foreach $row in @data
+        $for $i=0:$n_cols
+            $if $headers[$i]=~/-diff/
+                $row->[$i] -= $avg[$i]
+
+    $(if:0)
+        $n_rows = @data
+        $print data: $n_rows x $n_cols
+
+    &call open_W, $file.copy
+        print Out join(' ', @headers), "\n"
+        $foreach $row in @data
+            print Out join(' ', @$row), "\n"
+	
