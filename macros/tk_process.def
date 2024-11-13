@@ -24,13 +24,16 @@ subcode: frm_Process
                     $call input_entry, aft_n_avg, Number of bunches\nto compress
                     $call input_entry, aft_npnt, Number of points\nto output
                 &call frame
-                    G.subfrm_laser_d = $(frm)
+                    G.subfrm_laserd = $(frm)
                     $call input_entry, num_bunch, Number of bunches\nto output
                     $call input_entry, n_pre_bunch, First num bunches\nnot to compress
 
         &call row, 10
-            $list command_run
-            $call pack, btn, Button, text="Run", command=command_run
+            $list command_run, command_reset
+            &call col, 20
+                $call pack, btn, Button, text="Run", command=command_run
+            &call col, 20
+                $call button, btn_reset, text="Reset", command=command_reset
 
 #---------------------------------------- 
 subcode: show_subfrm_a(type)
@@ -57,6 +60,9 @@ subcode: on_folder_out
     G.btn_folder_out.config(text = "Change Output Folder")
 
 #---------------------------------------- 
+fncode: command_reset
+    reset_default()
+
 fncode: command_run
     load_form()
     save_opts()
@@ -89,8 +95,8 @@ fncode: command_run
                 trxas.normalize()
             $if G.file_type == "Energy" and trxas.type == "Energy"
                 $call run_Energy
-            $elif G.file_type == "laser_d" and trxas.type == "laser_d"
-                $call run_laser_d
+            $elif G.file_type == "laserd" and trxas.type == "laserd"
+                $call run_laserd
         count++
     msgbox("Processed %d data files in %s\n" % (count, G.opts['folder_out']))
     
@@ -98,9 +104,9 @@ fncode: command_run
         do_perbunch = not (G.opts['gs_method'] == 'avg bunch GS')
         trxas.process_energy(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['aft_n_avg']), int(G.opts['aft_npnt']), do_perbunch)
 
-    subcode: run_laser_d
+    subcode: run_laserd
         do_perbunch = not (G.opts['gs_method'] == 'avg bunch GS')
-        trxas.process_laser_d(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']), int(G.opts['n_pre_bunch']), do_perbunch)
+        trxas.process_laserd(file_out, int(G.opts['trigger']), int(G.opts['pre_n_avg']), int(G.opts['num_bunch']), int(G.opts['n_pre_bunch']), do_perbunch)
 
 #---------------------------------------- 
 fncode: check_folder(folder)
@@ -123,4 +129,4 @@ fncode: check_file(file)
         $if G.file_type == "Energy"
             $call show_subfrm_a, Energy
         $else
-            $call show_subfrm_a, laser_d
+            $call show_subfrm_a, laserd

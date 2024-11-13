@@ -13,8 +13,8 @@ subcode: read_trxas # file
                 header = line[3:]
                 $if re.match(r'#L .* Energy ', line)
                     self.type = "Energy"
-                $elif re.match(r'#L .* laser_d ', line)
-                    self.type = "laser_d"
+                $elif re.match(r'#L .* laserd ', line)
+                    self.type = "laserd"
                 $else
                     print("  file unrecognized: %s, header: %s..." % (file, line[0:20]))
                     return False

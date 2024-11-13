@@ -26,9 +26,12 @@ subcode: content
     $call vskip, 20
     &call col, 10
         $list command_Process, command_Average
-        $call pack, btn_A, Button, text="Process", command=command_Process
+        $call button, btn_A, text="Process", command=command_Process
         $call vskip, 20
-        $call pack, btn_B, Button, text="Average", command=command_Average
+        $call button, btn_B, text="Average", command=command_Average
+
+        ToolTip(btn_A, msg="Switch to the form for processing the data")
+        ToolTip(btn_B, msg="Switch to the form to average the processed data")
 
     G.frm_current = None
     $call frm_Process

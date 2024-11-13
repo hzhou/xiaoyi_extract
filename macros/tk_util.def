@@ -6,6 +6,12 @@ fncode: init_default
     load_opts()
     $call set_form
 
+fncode: reset_default
+    G.opts = {'n_pre_bunch':1, 'folder_in':'', 'folder_out':''}
+    $if os.path.exists("config")
+        os.remove("config")
+    $call set_form
+
 fncode: load_form
     $(for:$(entry_list))
         G.opts['$1'] = G.entry_$1.get()
