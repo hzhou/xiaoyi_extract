@@ -19,8 +19,10 @@ page: trxas_extract
     # t.read("data/1FeMIL125b_SPC_mode-00509")
     t.read("laserd/11022024-full-00237")
     # t.normalize(13000)
-    print("  %s cols, %s rows, %s bunch" % (t.num_cols, t.num_rows, t.o_jump))
-    $(if:0)
+    print("  %s cols, %s rows, %s channels, %s bunches, %s orbitals" % (t.num_cols, t.num_rows, t.num_channel, t.num_bunches, t.num_orbital))
+    $(if:1)
+        t.process_simple('data/simple.out')
+    $(elif:0)
         # trig, pre-n, aft-n, n-output
         t.process_energy('data/t0.out', 289, 4, 5, 4, True)
         t.process_energy('data/t1.out', 289, 4, 5, 4, False)
@@ -88,4 +90,6 @@ subcode: _autoload
 
         def process_laserd(self, fileout, trig, pre_n_avg, n_bunch, n_pre_bunch=1, do_perbunch=True):
             $call process_trxas, laserd
+        def process_simple(self, fileout):
+            $call process_trxas, Simple
 

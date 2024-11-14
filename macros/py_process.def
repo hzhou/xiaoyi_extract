@@ -1,11 +1,5 @@
 subcode: process_trxas(type)
-    $if self.type != "$(type)"
-        raise Exception("Expect $(type) scan, but the file is %s scan." % self.type)
-
-    extra_cols = ["$(type)"]  # Energy, laserd
     header_cols = []
-    header_cols.extend(extra_cols)
-
     $call process_trxas_$(type)
 
     self.data_out = data_out
@@ -13,7 +7,45 @@ subcode: process_trxas(type)
         np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
 
     #---------------------------------------- 
+    subcode: process_trxas_Simple
+        $call prepare_header
+        # print("Output data: %d rows, %d cols" % (self.num_rows, len(header_cols)))
+        data_out = np.empty([self.num_rows, len(header_cols)])
+        i0 = self.idxs['c0o0b0']
+        i1 = self.idxs['c1o0b0']
+        i2 = self.idxs['c2o0b0']
+        $for i_row=0:self.num_rows
+            row_in = self.data[i_row,:]
+            $call calc_background
+            $call out_line_simple
+            
+        subcode: prepare_header
+            $for i=0:self.num_bunches
+                $for j=0:self.num_orbital
+                    header_cols.append("b%d-o%d" % (i, j))
+
+        subcode: calc_background
+            background = []
+            $for i=0:self.num_bunches
+                a0 = 0
+                $for j=0:self.num_orbital
+                    a0 += row_in[i0 + i + j * self.o_jump]
+                background.append(a0 / self.num_orbital)
+
+        subcode: out_line_simple
+            $for i=0:self.num_bunches
+                $for j=0:self.num_orbital
+                    t1=row_in[i1 + i + j * self.o_jump]
+                    t2=row_in[i1 + i + j * self.o_jump]
+                    data_out[i_row, i * self.num_orbital + j] = (t1+t2)/2/background[i]
+
     subcode: process_trxas_Energy
+        $call assert_type, Energy
+
+        extra_cols = []
+        extra_cols.append("Energy")
+        header_cols.extra_cols(extra_cols)
+
         $for j=0:n_pnt
             header_cols.append("b%d" % j)
             header_cols.append("b%d-diff" % j)
@@ -31,6 +63,8 @@ subcode: process_trxas(type)
             $call out_line_b_diff, aft_n_avg
 
     subcode: process_trxas_laserd
+        $call assert_type, laserd
+
         header_cols.append("diff")
         # N = self.num_rows * n_bunch
         N = self.num_rows * n_pre_bunch + n_bunch - n_pre_bunch
@@ -122,4 +156,9 @@ subcode: process_trxas(type)
             diff = t12 - back12[$(b_idx)]
         $else
             diff = t12 - back12_avg
+
+    #---------------------------------------- 
+    subcode: assert_type(type)
+        $if self.type != "$(type)"
+            raise Exception("Expect $(type) scan, but the file is %s scan." % self.type)
 
