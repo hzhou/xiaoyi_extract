@@ -33,9 +33,10 @@ subcode: content
         $call vskip, 20
         $call button, btn_B, text="Average", command=command_Average
 
-        ToolTip(btn_a, msg="Switch to the form to process the data by simple background")
-        ToolTip(btn_A, msg="Switch to the form to process the data as Energy scan or laserd data")
-        ToolTip(btn_B, msg="Switch to the form to average the processed data")
+        $if has_ToolTip
+            ToolTip(btn_a, msg="Switch to the form to process the data by simple background")
+            ToolTip(btn_A, msg="Switch to the form to process the data as Energy scan or laserd data")
+            ToolTip(btn_B, msg="Switch to the form to average the processed data")
 
     G.frm_current = None
     $call frm_Simple

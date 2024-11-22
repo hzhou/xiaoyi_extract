@@ -18,15 +18,15 @@ subcode: frm_Simple
 #---------------------------------------- 
 subcode: on_file_in_a
     G.opts['file_in'] = G.opts['file_in_a']
-    $call on_file_in
+    $call on_file_in, simple
 
 subcode: on_folder_in_a
     G.opts['folder_in'] = G.opts['folder_in_a']
-    $call on_folder_in
+    $call on_folder_in, simple
 
 subcode: on_folder_out_a
     G.opts['folder_out'] = G.opts['folder_out_a']
-    $call on_folder_out
+    $call on_folder_out, simple
 
 #---------------------------------------- 
 fncode: command_simple
@@ -53,7 +53,7 @@ fncode: command_simple
     msgbox("Processed %d data files in %s\n" % (count, G.opts['folder_out']))
     
 #---------------------------------------- 
-fncode: check_folder(folder)
+fncode: check_folder_simple(folder)
     load_files(folder)
     $if G.name
         $call set_entry, G.entry_range, "%s-%s" % (G.idx_min, G.idx_max)
@@ -61,7 +61,7 @@ fncode: check_folder(folder)
     G.lbl_folder_in.config(text=shortname(folder))
     G.btn_folder_in.config(text = "Change Input Folder")
 
-fncode: check_file(file)
+fncode: check_file_simple(file)
     G.lbl_file_in.config(text=shortname(file))
     trxas = Extract()
     trxas.read(file)

@@ -45,13 +45,16 @@ fncode: command_avg
         count, G.avg_file = Extract.average_output(G.opts['folder_avg'], idx_min, idx_max)
         msgbox("Averaging %d data files -> %s" % (count, G.avg_file))
 
-fncode: command_plot
+subcode: _autoload
     $import numpy as np
-    $import matplotlib
-    $import matplotlib.pyplot as plt
-    $import Figure from matplotlib.figure
-    $import FigureCanvasTkAgg from matplotlib.backends.backend_tkagg
-    matplotlib.use("TkAgg")
+    $try_import matplotlib
+
+fncode: command_plot
+    $if has_matplotlib
+        import matplotlib.pyplot as plt
+        from matplotlib.figure import Figure 
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        matplotlib.use("TkAgg")
 
     def get_col():
         col = G.entry_plot_col.get()

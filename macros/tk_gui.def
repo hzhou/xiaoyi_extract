@@ -2,7 +2,7 @@ subcode: tk_main(size)
     $import tkinter as tk
     $import tkinter.filedialog as fd
     $import tkinter.messagebox as msgbox
-    $import ToolTip from tktooltip
+    $try_import ToolTip from tktooltip
 
     window = tk.Tk()
     $(if:title)

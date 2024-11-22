@@ -44,22 +44,31 @@ subcode: show_subfrm_a(type)
 
 #---------------------------------------- 
 
-subcode: on_file_in    
+subcode: on_file_in(@frm)    
     $if G.opts['file_in'] and os.path.exists(G.opts['file_in'])
         G.opts['folder_in'] = os.path.dirname(G.opts['file_in'])
+        $(if:frm)
+            check_folder_$(frm)(G.opts['folder_in'])
+            check_file_$(frm)(G.opts['file_in'])
+        $(else)
+            check_folder(G.opts['folder_in'])
+            check_file(G.opts['file_in'])
+
+subcode: on_folder_in(@frm)
+    $(if:frm)
+        check_folder_$(frm)(G.opts['folder_in'])
+        $if G.name
+            check_file_$(frm)(G.opts['file_in'])
+    $(else)
         check_folder(G.opts['folder_in'])
-        check_file(G.opts['file_in'])
+        $if G.name
+            check_file(G.opts['file_in'])
 
-subcode: on_folder_in
-    check_folder(G.opts['folder_in'])
-    $if G.name
-        check_file(G.opts['file_in'])
-
-subcode: on_folder_out
-    $if G.frm_current == G.frm_Simple
+subcode: on_folder_out(@frm)
+    $(if:frm=simple)
         G.lbl_folder_out_a.config(text=shortname(G.opts['folder_out']))
         G.btn_folder_out_a.config(text = "Change Output Folder")
-    $else
+    $(else)
         G.lbl_folder_out.config(text=shortname(G.opts['folder_out']))
         G.btn_folder_out.config(text = "Change Output Folder")
 
