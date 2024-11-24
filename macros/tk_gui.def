@@ -4,13 +4,13 @@ subcode: tk_main(size)
     $import tkinter.messagebox as msgbox
     $try_import ToolTip from tktooltip
 
-    window = tk.Tk()
+    G.window = tk.Tk()
     $(if:title)
-        window.title("$(title)")
-    window.resizable(True, True)
-    window.geometry('$(size)')
+        G.window.title("$(title)")
+    G.window.resizable(True, True)
+    G.window.geometry('$(size)')
     BLOCK
-    window.mainloop()
+    G.window.mainloop()
 
 #---------------------------------------- 
 fncode: msgbox(msg)
@@ -45,6 +45,12 @@ subcode: input_fd(type, name, btn_text)
         $call pack, G.btn_$(name), Button, text="$(btn_text)", command=command_$(name)
         $call pack, G.lbl_$(name), Label, text=G.opts['$(name)']
         $call pack, G.lbl_$(name)_info, Label, text=""
+
+subcode: set_fd_name(name, text)
+    G.lbl_$(name).config(text = $(text))
+
+subcode: set_fd_info(name, text)
+    G.lbl_$(name)_info.config(text = $(text))
 
 subcode: checkbox(name, title)
     G.choice_$(name) = tk.IntVar()
@@ -92,7 +98,7 @@ subcode: button(var, @attr)
 
 #---------------------------------------- 
 macros:
-    frm: window
+    frm: G.window
     frm_idx: 0
     pack_attr:
 

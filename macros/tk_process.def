@@ -9,7 +9,9 @@ subcode: frm_Process
             $call input_folder, folder_out, Select Output Folder
 
         &call row, 10
-            $call checkbox, do_poission, Apply Poisson Correction
+            &call col, 5
+                $call checkbox, do_poission, Apply Poisson Correction
+                $call checkbox, do_avg_bg, Average C0 Across Orbitals
             $call input_entry, rep_rate, Laser Rep-Rate
         &call row, 10
             $call input_entry, trigger, Sync bunch number
@@ -94,9 +96,9 @@ fncode: command_run
         trxas = Extract()
         $if trxas.read(file_in)
             $if G.opts['do_poission']
-                trxas.normalize(float(G.opts['rep_rate']))
+                trxas.normalize(float(G.opts['rep_rate']), G.opts['do_avg_bg'])
             $else
-                trxas.normalize()
+                trxas.normalize(0, G.opts['do_avg_bg'])
             $if G.file_type == "Energy" and trxas.type == "Energy"
                 $call run_Energy
             $elif G.file_type == "laserd" and trxas.type == "laserd"
@@ -116,6 +118,7 @@ fncode: command_run
 fncode: check_folder(folder)
     load_files(folder)
     $call set_frm, entry_range, lbl_folder_in, btn_folder_in
+    G.lbl_folder_in_info.config(text="%d data files" % len(G.files))
 
     subcode: set_frm(range, lbl, btn)
         $if G.name

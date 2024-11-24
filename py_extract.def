@@ -82,7 +82,7 @@ subcode: _autoload
             $call read_trxas
             return True
 
-        def normalize(self, max_count=0):
+        def normalize(self, max_count=0, do_avg_bg=True):
             $call normalize
 
         def process_energy(self, fileout, trig, pre_n_avg, aft_n_avg, n_pnt, do_perbunch=True):

@@ -74,24 +74,35 @@ subcode: normalize
     $if max_count > 0
         $for i=0:self.num_rows
             $call poisson_correction
-    $for i=0:self.num_rows
-        $call get_c0_avgs
-        $call per_bunch_normalize
+    $for i=1:self.num_rows
+        $if do_avg_bg
+            $call avg_background
+        $else
+            $call direct_background
     self.normalized = True
 
-    subcode: get_c0_avgs
-        avgs = []
-        $for j=0:self.num_bunches
-            sum = 0.0
-            $for k=0:self.num_orbital
-                sum += self.data[i, i0 + k * self.num_bunches + j]
-            avgs.append(sum / self.num_orbital)
-
-    subcode: per_bunch_normalize
-        # -- normalize per bunch
+    subcode: direct_background
         $for j=0:self.num_bunches * self.num_orbital
-            self.data[i, i1 + j] /= avgs[j % self.num_bunches]
-            self.data[i, i2 + j] /= avgs[j % self.num_bunches]
+            self.data[i, i1 + j] /= self.data[i, i0 + j]
+            self.data[i, i2 + j] /= self.data[i, i0 + j]
+
+    subcode: avg_background
+        $call get_c0_avgs
+        $call per_bunch_normalize
+
+        subcode: get_c0_avgs
+            avgs = []
+            $for j=0:self.num_bunches
+                sum = 0.0
+                $for k=0:self.num_orbital
+                    sum += self.data[i, i0 + k * self.num_bunches + j]
+                avgs.append(sum / self.num_orbital)
+
+        subcode: per_bunch_normalize
+            # -- normalize per bunch
+            $for j=0:self.num_bunches * self.num_orbital
+                self.data[i, i1 + j] /= avgs[j % self.num_bunches]
+                self.data[i, i2 + j] /= avgs[j % self.num_bunches]
 
     subcode: poisson_correction
         $import math

@@ -1,6 +1,6 @@
 macros:
     entry_list: trigger, range, pre_n_avg, aft_n_avg, aft_npnt, num_bunch, rep_rate, n_pre_bunch
-    choice_list: do_poission, gs_method
+    choice_list: do_poission, do_avg_bg, gs_method
 
 fncode: init_default
     load_opts()

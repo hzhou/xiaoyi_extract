@@ -2,6 +2,7 @@ subcode: frm_Average
     &call frame, relief='groove', borderwidth=2
         G.frm_Average = $(frm)
 
+        $call vskip, 20
         &call row, 1
             $call input_file, file_avg, Check Data File
 
@@ -12,6 +13,10 @@ subcode: frm_Average
             $call input_entry, avg_range, File index range (min - max)
             $list command_avg
             $call pack, btn, Button, text="Run Average", command=command_avg
+
+        $call vskip, 20
+        &call row, 1
+            $call input_file, file_avg_plot, Select Avg Data File
 
         &call row, 1
             $call input_entry, plot_col, Plot Column
@@ -36,6 +41,17 @@ subcode: on_folder_avg
     str_range = load_txt_range(G.opts['folder_avg'])
     $call set_entry, G.entry_avg_range, str_range
 
+subcode: on_file_avg_plot
+    $call set_fd_name, file_avg_plot, G.opts['file_avg_plot']
+
+    t = np.loadtxt(G.opts['file_avg_plot'], skiprows=1)
+    $if t.shape[1] == 2
+        msg = "Laser Delay: %d rows" % t.shape[0]
+    $else
+        num_bunches = (t.shape[1] - 1) / 2
+        msg = "Energy Scan: %d rows, %d bunches" % (t.shape[0], num_bunches)
+    $call set_fd_info, file_avg_plot, msg
+
 #---------------------------------------- 
 fncode: command_avg
     G.opts['avg_range'] = G.entry_avg_range.get()
@@ -43,7 +59,9 @@ fncode: command_avg
         idx_min = int(RE.m.group(1))
         idx_max = int(RE.m.group(2))
         count, G.avg_file = Extract.average_output(G.opts['folder_avg'], idx_min, idx_max)
-        msgbox("Averaging %d data files -> %s" % (count, G.avg_file))
+        G.opts['file_avg_plot'] = G.avg_file
+        $call on_file_avg_plot
+        # msgbox("Averaging %d data files -> %s" % (count, G.avg_file))
 
 subcode: _autoload
     $import numpy as np
@@ -55,6 +73,8 @@ fncode: command_plot
         from matplotlib.figure import Figure 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         matplotlib.use("TkAgg")
+    $else
+        return
 
     def get_col():
         col = G.entry_plot_col.get()
@@ -65,36 +85,44 @@ fncode: command_plot
         $else
             return 0
 
-    col = int(G.entry_plot_col.get()) * 2 + 1
-    $if col > 0
-        t = np.loadtxt(G.avg_file, skiprows=1)
-        $call check_plot
-        $if t.shape[1] == 2
-            G.plt.set_xlabel('Laser Delay')
-            G.plt.set_ylabel('diff', color='tab:blue')
-            G.plt2.set_axis_off()
+    avg_file = G.opts['file_avg_plot']
+    t = np.loadtxt(avg_file, skiprows=1)
+    $call check_plot
+    $if t.shape[1] == 2
+        G.plot_window.title("Laser Delay - " + avg_file)
+        G.plt.set_xlabel('Laser Delay')
+        G.plt.set_ylabel('diff', color='tab:blue')
+        G.plt2.set_axis_off()
 
-            G.plt.clear()
-            G.plt.plot(t[:,0], t[:,1], color='tab:blue') 
-        $else
-            G.plt.set_xlabel('Energy')
-            G.plt.set_ylabel('raw', color='tab:blue')
-            G.plt2.set_axis_on()
-            G.plt2.set_ylabel('diff', color='tab:red')
+        G.plt.clear()
+        G.plt.plot(t[:,0], t[:,1], color='tab:blue') 
+    $else
+        G.plt.set_xlabel('Energy')
+        G.plt.set_ylabel('raw', color='tab:blue')
+        G.plt2.set_axis_on()
+        G.plt2.set_ylabel('diff', color='tab:red')
 
-            G.plt.clear()
-            G.plt.plot(t[:,0], t[:,col], color='tab:blue') 
-            G.plt2.clear()
-            G.plt2.plot(t[:,0], t[:,col+1], color='tab:red') 
-        G.canvas.draw()
+        col = int(G.entry_plot_col.get())
+        G.plot_window.title("Energy Scan - %s - Column %d" % (avg_file, col))
+
+        j = col * 2 + 1
+        G.plt.clear()
+        G.plt.plot(t[:,0], t[:,j], label='raw', color='tab:blue') 
+        G.plt2.clear()
+        G.plt2.plot(t[:,0], t[:,j+1], label='diff', color='tab:red') 
+
+    G.canvas.draw()
     
     subcode: check_plot
-        $if not G.plt
-            figure = Figure(figsize=(5,3), dpi=100)
-            G.plt = figure.add_subplot(1, 1, 1)
-            G.plt2 = G.plt.twinx()
+        figure = Figure(figsize=(5,3), dpi=100)
+        G.plt = figure.add_subplot(1, 1, 1)
+        G.plt2 = G.plt.twinx()
 
-            G.canvas = FigureCanvasTkAgg(figure, G.frm_Plot)
-            G.canvas.get_tk_widget().pack()
+        G.plot_window = tk.Toplevel(G.window)
+        G.plot_window.geometry('1024x768')
+        G.plot_window.title("Plot Average Data")
+
+        G.canvas = FigureCanvasTkAgg(figure, G.plot_window)
+        G.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=11, pady=10)
 
 #---------------------------------------- 
