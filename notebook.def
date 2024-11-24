@@ -1,0 +1,5 @@
+include: macros/common.def
+
+page: notebook
+    module: python
+    pass

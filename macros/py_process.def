@@ -44,7 +44,7 @@ subcode: process_trxas(type)
 
         extra_cols = []
         extra_cols.append("Energy")
-        header_cols.extra_cols(extra_cols)
+        header_cols.extend(extra_cols)
 
         $for j=0:n_pnt
             header_cols.append("b%d" % j)
