@@ -1,7 +1,6 @@
 include: macros/tk_gui.def
 include: macros/tk_util.def
 include: macros/tk_process.def
-include: macros/tk_process_simple.def
 include: macros/tk_average.def
 
 page: tk_extract
@@ -26,31 +25,21 @@ subcode: content
 
     $call vskip, 20
     &call col, 10
-        $list command_Process, command_Average, command_Simple
-        $call button, btn_a, text="Simple", command=command_Simple
-        $call vskip, 20
+        $list command_Process, command_Average
         $call button, btn_A, text="Process", command=command_Process
         $call vskip, 20
         $call button, btn_B, text="Average", command=command_Average
 
         $if has_ToolTip
-            ToolTip(btn_a, msg="Switch to the form to process the data by simple background")
             ToolTip(btn_A, msg="Switch to the form to process the data as Energy scan or laserd data")
             ToolTip(btn_B, msg="Switch to the form to average the processed data")
 
     G.frm_current = None
-    $call frm_Simple
     $call frm_Process
     $call frm_Average
 
     init_default()
     command_Process()
-
-fncode: command_Simple
-    $if G.frm_current
-        G.frm_current.pack_forget()
-    G.frm_current = G.frm_Simple
-    G.frm_current.pack(pady = 5)
 
 fncode: command_Process
     $if G.frm_current

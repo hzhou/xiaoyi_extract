@@ -90,6 +90,3 @@ subcode: _autoload
 
         def process_laserd(self, fileout, trig, pre_n_avg, n_bunch, n_pre_bunch=1, do_perbunch=True):
             $call process_trxas, laserd
-        def process_simple(self, fileout):
-            $call process_trxas, Simple
-

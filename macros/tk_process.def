@@ -54,23 +54,14 @@ subcode: on_file_in(@frm)
             check_folder(G.opts['folder_in'])
             check_file(G.opts['file_in'])
 
-subcode: on_folder_in(@frm)
-    $(if:frm)
-        check_folder_$(frm)(G.opts['folder_in'])
-        $if G.name
-            check_file_$(frm)(G.opts['file_in'])
-    $(else)
-        check_folder(G.opts['folder_in'])
-        $if G.name
-            check_file(G.opts['file_in'])
+subcode: on_folder_in
+    check_folder(G.opts['folder_in'])
+    $if G.name
+        check_file(G.opts['file_in'])
 
-subcode: on_folder_out(@frm)
-    $(if:frm=simple)
-        G.lbl_folder_out_a.config(text=shortname(G.opts['folder_out']))
-        G.btn_folder_out_a.config(text = "Change Output Folder")
-    $(else)
-        G.lbl_folder_out.config(text=shortname(G.opts['folder_out']))
-        G.btn_folder_out.config(text = "Change Output Folder")
+subcode: on_folder_out
+    G.lbl_folder_out.config(text=shortname(G.opts['folder_out']))
+    G.btn_folder_out.config(text = "Change Output Folder")
 
 #---------------------------------------- 
 fncode: command_reset
@@ -124,10 +115,7 @@ fncode: command_run
 #---------------------------------------- 
 fncode: check_folder(folder)
     load_files(folder)
-    $if G.frm_current == G.frm_Simple
-        $call set_frm, entry_range_a, lbl_folder_in_a, btn_folder_in_a
-    $else
-        $call set_frm, entry_range, lbl_folder_in, btn_folder_in
+    $call set_frm, entry_range, lbl_folder_in, btn_folder_in
 
     subcode: set_frm(range, lbl, btn)
         $if G.name
@@ -136,23 +124,18 @@ fncode: check_folder(folder)
         G.$(btn).config(text = "Change Input Folder")
 
 fncode: check_file(file)
-    $if G.frm_current == G.frm_Simple
-        G.lbl_file_in_a.config(text=shortname(file))
-    $else
-        G.lbl_file_in.config(text=shortname(file))
+    G.lbl_file_in.config(text=shortname(file))
 
     trxas = Extract()
     trxas.read(file)
     msg = "%d channels, %d orbitals, %d bunches, %d rows" % (trxas.c_max-trxas.c_min+1, trxas.o_max-trxas.o_min+1, trxas.b_max-trxas.b_min+1, trxas.num_rows)
-    $if G.frm_current == G.frm_Simple
-        G.lbl_file_in_a_info.config(text=msg)
-    $else
-        G.lbl_file_in_info.config(text=msg)
 
-        $if trxas.type != G.file_type
-            G.file_type = trxas.type
-            $if G.file_type == "Energy"
-                $call show_subfrm_a, Energy
-            $else
-                $call show_subfrm_a, laserd
+    G.lbl_file_in_info.config(text=msg)
+
+    $if trxas.type != G.file_type
+        G.file_type = trxas.type
+        $if G.file_type == "Energy"
+            $call show_subfrm_a, Energy
+        $else
+            $call show_subfrm_a, laserd
 
